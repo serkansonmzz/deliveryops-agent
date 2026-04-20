@@ -22,6 +22,9 @@ deliveryops = "app.main:app"
 requires = ["uv_build>=0.11.2,<0.12.0"]
 build-backend = "uv_build"
 
+[tool.uv.build-backend]
+module-name = "app"
+
 [dependency-groups]
 dev = [
     "pytest>=9.0.3",
@@ -29,4 +32,4 @@ dev = [
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-pythonpath = ["."]
+pythonpath = ["src"]

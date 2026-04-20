@@ -9,3 +9,7 @@ wheels/
 # Virtual environments
 .venv
 .env
+.deliveryops/
+.venv/
+__pycache__/
+.pytest_cache/
