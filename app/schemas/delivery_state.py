@@ -1,0 +1,45 @@
+from datetime import datetime, timezone
+from pathlib import Path
+from pydantic import BaseModel, Field
+
+
+def utc_now_iso() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+
+class DeliveryState(BaseModel):
+    request_id: str
+    repo_path: str
+    github_owner: str | None = None
+    github_repo: str | None = None
+    github_issue_number: int | None = None
+    github_issue_url: str | None = None
+    branch_name: str | None = None
+
+    original_request: str
+    current_step: str = "initialized"
+    completed_steps: list[str] = Field(default_factory=list)
+
+    pending_action: str | None = None
+    pending_approval: bool = False
+
+    test_status: str | None = None
+    test_command: str | None = None
+    changed_files: list[str] = Field(default_factory=list)
+
+    last_error: str | None = None
+    pr_url: str | None = None
+
+    created_at: str = Field(default_factory=utc_now_iso)
+    updated_at: str = Field(default_factory=utc_now_iso)
+
+    def mark_completed(self, step: str) -> None:
+        if step not in self.completed_steps:
+            self.completed_steps.append(step)
+
+        self.current_step = step
+        self.updated_at = utc_now_iso()
+
+    @property
+    def workspace_dir(self) -> Path:
+        return Path(self.repo_path) / ".deliveryops"

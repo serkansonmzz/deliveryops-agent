@@ -1,0 +1,98 @@
+from pathlib import Path
+from app.schemas.delivery_state import DeliveryState
+
+
+CHECKLIST_STEPS = [
+    ("inspect_repository", "Inspect repository"),
+    ("initialize_workspace", "Initialize local DeliveryOps workspace"),
+    ("analyze_feature_request", "Analyze feature request"),
+    ("create_github_issue", "Create GitHub issue"),
+    ("create_feature_branch", "Create feature branch"),
+    ("run_architecture_review", "Run architecture mini-review"),
+    ("generate_implementation_plan", "Generate implementation plan"),
+    ("prepare_patch", "Prepare patch"),
+    ("request_patch_approval", "Request approval to apply patch"),
+    ("apply_patch", "Apply patch"),
+    ("detect_test_command", "Detect test command"),
+    ("run_tests", "Run tests"),
+    ("generate_commit_message", "Generate commit message"),
+    ("request_commit_approval", "Request approval for commit"),
+    ("commit_changes", "Commit changes"),
+    ("request_push_approval", "Request approval for push"),
+    ("push_branch", "Push branch"),
+    ("request_pr_approval", "Request approval for draft PR"),
+    ("open_draft_pr", "Open draft PR"),
+    ("update_github_issue", "Update GitHub issue"),
+    ("produce_final_report", "Produce final delivery report"),
+]
+
+
+def render_delivery_markdown(state: DeliveryState) -> str:
+    lines: list[str] = []
+
+    lines.append("# DeliveryOps Runbook")
+    lines.append("")
+    lines.append("## Request")
+    lines.append("")
+    lines.append(state.original_request)
+    lines.append("")
+
+    lines.append("## Tracking")
+    lines.append("")
+    lines.append(f"- Request ID: `{state.request_id}`")
+    lines.append(f"- GitHub Issue: `{state.github_issue_url or 'pending'}`")
+    lines.append(f"- Branch: `{state.branch_name or 'pending'}`")
+    lines.append(f"- Draft PR: `{state.pr_url or 'pending'}`")
+    lines.append(f"- Current Step: `{state.current_step}`")
+    lines.append(f"- Pending Approval: `{state.pending_approval}`")
+    lines.append("")
+
+    lines.append("## Checklist")
+    lines.append("")
+
+    for step_key, label in CHECKLIST_STEPS:
+        checked = "x" if step_key in state.completed_steps else " "
+        lines.append(f"- [{checked}] {label}")
+
+    lines.append("")
+    lines.append("## Test Results")
+    lines.append("")
+    lines.append(f"- Command: `{state.test_command or 'pending'}`")
+    lines.append(f"- Status: `{state.test_status or 'pending'}`")
+    lines.append("")
+
+    lines.append("## Changed Files")
+    lines.append("")
+
+    if state.changed_files:
+        for file_path in state.changed_files:
+            lines.append(f"- `{file_path}`")
+    else:
+        lines.append("- pending")
+
+    lines.append("")
+    lines.append("## Last Agent Notes")
+    lines.append("")
+    lines.append(state.last_error or "No notes yet.")
+    lines.append("")
+
+    lines.append("## Next Action")
+    lines.append("")
+    if state.pending_approval and state.pending_action:
+        lines.append(f"Waiting for approval: `{state.pending_action}`")
+    else:
+        lines.append(f"Continue from step: `{state.current_step}`")
+
+    lines.append("")
+
+    return "\n".join(lines)
+
+
+def update_delivery_markdown(state: DeliveryState) -> Path:
+    workspace = Path(state.repo_path) / ".deliveryops"
+    workspace.mkdir(exist_ok=True)
+
+    output_path = workspace / "DELIVERY.md"
+    output_path.write_text(render_delivery_markdown(state), encoding="utf-8")
+
+    return output_path
