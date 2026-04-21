@@ -17,6 +17,10 @@ from app.tools.github_tools import (
     ensure_gh_authenticated,
     create_github_issue,
 )
+from app.tools.architecture_review_tools import (
+    build_architecture_review,
+    build_implementation_plan,
+)
 from app.tools.issue_body_tools import build_issue_spec
 from app.tools.markdown_tracking_tools import update_delivery_markdown
 
@@ -156,6 +160,22 @@ def run(
         create_branch(repo_path, branch_name)
         state.branch_name = branch_name
         state.mark_completed("create_feature_branch")
+
+        architecture_review = build_architecture_review(repo_path, request)
+        implementation_plan = build_implementation_plan(architecture_review)
+
+        state.architecture_review_summary = architecture_review.summary
+        state.detected_stack = architecture_review.detected_stack
+        state.affected_areas = architecture_review.affected_areas
+        state.likely_files = architecture_review.likely_files
+        state.risk_notes = architecture_review.risks
+        state.security_notes = architecture_review.security_notes
+        state.testing_notes = architecture_review.testing_notes
+        state.devops_notes = architecture_review.devops_notes
+        state.implementation_plan = implementation_plan.steps
+
+        state.mark_completed("run_architecture_review")
+        state.mark_completed("generate_implementation_plan")
     else:
         state.last_error = (
             "GitHub owner/repo was not provided. "
@@ -164,7 +184,9 @@ def run(
 
     save_state(state)
     update_delivery_markdown(state)
-
+    if state.implementation_plan:
+        console.print("[green]Architecture review and implementation plan generated.[/green]")
+        
     console.print("[green]DeliveryOps run initialized.[/green]")
     console.print(f"Request ID: {request_id}")
     console.print(f"Current Step: {state.current_step}")
