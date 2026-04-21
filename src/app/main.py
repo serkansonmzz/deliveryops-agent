@@ -8,7 +8,10 @@ from app.schemas.delivery_state import DeliveryState
 from app.state_store import ensure_workspace, save_state, load_state
 from app.tools.git_tools import ensure_git_repo, get_current_branch, get_git_status
 from app.tools.markdown_tracking_tools import update_delivery_markdown
-
+from app.tools.github_tools import (
+    ensure_gh_authenticated,
+    create_github_issue,
+)
 
 app = typer.Typer(help="DeliveryOps Agent CLI")
 console = Console()
@@ -52,6 +55,27 @@ def status(repo: str = typer.Option(".", help="Path to the local repository.")):
     console.print(f"Pending Action: {state.pending_action or 'none'}")
     console.print(f"Completed Steps: {', '.join(state.completed_steps) or 'none'}")
 
+@app.command("github-check")
+def github_check():
+    ensure_gh_authenticated()
+    console.print("[green]GitHub CLI is available and authenticated.[/green]")
+
+
+@app.command("create-issue")
+def create_issue(
+    github_owner: str = typer.Option(..., help="GitHub owner/user/org."),
+    github_repo: str = typer.Option(..., help="GitHub repository name."),
+    title: str = typer.Option(..., help="Issue title."),
+    body: str = typer.Option(..., help="Issue body."),):
+    issue = create_github_issue(
+        owner=github_owner,
+        repo=github_repo,
+        title=title,
+        body=body,
+    )
+
+    console.print("[green]GitHub issue created.[/green]")
+    console.print(f"Issue #{issue.number}: {issue.url}")
 
 @app.command()
 def inspect(repo: str = typer.Option(".", help="Path to the local repository.")):
