@@ -2,7 +2,7 @@ import uuid
 from pathlib import Path
 import typer
 from rich.console import Console
-
+from app.tools.issue_body_tools import build_issue_spec
 from app.config import resolve_repo_path
 from app.schemas.delivery_state import DeliveryState
 from app.state_store import ensure_workspace, save_state, load_state
@@ -118,12 +118,38 @@ def run(
     state.mark_completed("inspect_repository")
     state.mark_completed("initialize_workspace")
 
+    if github_owner and github_repo:
+        issue_spec = build_issue_spec(request)
+
+        issue = create_github_issue(
+            owner=github_owner,
+            repo=github_repo,
+            title=issue_spec.title,
+            body=issue_spec.body,
+            labels=issue_spec.labels,
+        )
+
+        state.github_issue_number = issue.number
+        state.github_issue_url = issue.url
+        state.mark_completed("analyze_feature_request")
+        state.mark_completed("create_github_issue")
+    else:
+        state.last_error = (
+            "GitHub owner/repo was not provided. Skipping GitHub issue creation."
+        )
+
     save_state(state)
     update_delivery_markdown(state)
 
     console.print("[green]DeliveryOps run initialized.[/green]")
     console.print(f"Request ID: {request_id}")
     console.print(f"Current Step: {state.current_step}")
+
+    if state.github_issue_url:
+        console.print(f"GitHub Issue: {state.github_issue_url}")
+    else:
+        console.print("[yellow]GitHub issue was not created.[/yellow]")
+
     console.print(f"Tracking file: {repo_path / '.deliveryops' / 'DELIVERY.md'}")
 
 

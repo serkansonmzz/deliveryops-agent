@@ -40,4 +40,12 @@ deliveryops run --repo . --request "Add a healthcheck endpoint"
 
 # Check status
 deliveryops status --repo .
+
+# Create an issue and run the flow
+deliveryops run \
+  --repo . \
+  --github-owner my-user \
+  --github-repo my-repo \
+  --request "Add a healthcheck endpoint"
+
 ```
