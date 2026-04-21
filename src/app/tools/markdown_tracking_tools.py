@@ -53,7 +53,54 @@ def render_delivery_markdown(state: DeliveryState) -> str:
     for step_key, label in CHECKLIST_STEPS:
         checked = "x" if step_key in state.completed_steps else " "
         lines.append(f"- [{checked}] {label}")
+        lines.append("## Architecture Review Summary")
+    lines.append("")
+    lines.append(state.architecture_review_summary or "pending")
+    lines.append("")
 
+    lines.append("### Detected Stack")
+    lines.append("")
+    if state.detected_stack:
+        for item in state.detected_stack:
+            lines.append(f"- `{item}`")
+    else:
+        lines.append("- pending")
+    lines.append("")
+
+    lines.append("### Affected Areas")
+    lines.append("")
+    if state.affected_areas:
+        for item in state.affected_areas:
+            lines.append(f"- {item}")
+    else:
+        lines.append("- pending")
+    lines.append("")
+
+    lines.append("### Likely Files")
+    lines.append("")
+    if state.likely_files:
+        for item in state.likely_files:
+            lines.append(f"- `{item}`")
+    else:
+        lines.append("- pending")
+    lines.append("")
+
+    lines.append("### Risk Notes")
+    lines.append("")
+    if state.risk_notes:
+        for item in state.risk_notes:
+            lines.append(f"- {item}")
+    else:
+        lines.append("- pending")
+    lines.append("")
+
+    lines.append("## Implementation Plan")
+    lines.append("")
+    if state.implementation_plan:
+        for index, step in enumerate(state.implementation_plan, start=1):
+            lines.append(f"{index}. {step}")
+    else:
+        lines.append("pending")
     lines.append("")
     lines.append("## Test Results")
     lines.append("")

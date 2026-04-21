@@ -27,6 +27,16 @@ class DeliveryState(BaseModel):
     test_command: str | None = None
     changed_files: list[str] = Field(default_factory=list)
 
+    architecture_review_summary: str | None = None
+    detected_stack: list[str] = Field(default_factory=list)
+    affected_areas: list[str] = Field(default_factory=list)
+    likely_files: list[str] = Field(default_factory=list)
+    risk_notes: list[str] = Field(default_factory=list)
+    security_notes: list[str] = Field(default_factory=list)
+    testing_notes: list[str] = Field(default_factory=list)
+    devops_notes: list[str] = Field(default_factory=list)
+    implementation_plan: list[str] = Field(default_factory=list)
+
     last_error: str | None = None
     pr_url: str | None = None
 
