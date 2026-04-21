@@ -13,3 +13,6 @@ wheels/
 .venv/
 __pycache__/
 .pytest_cache/
+
+# Agent state
+.deliveryops/*
