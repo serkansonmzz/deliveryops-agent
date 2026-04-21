@@ -1,17 +1,25 @@
 import uuid
-from pathlib import Path
+
 import typer
 from rich.console import Console
-from app.tools.issue_body_tools import build_issue_spec
+
 from app.config import resolve_repo_path
 from app.schemas.delivery_state import DeliveryState
 from app.state_store import ensure_workspace, save_state, load_state
-from app.tools.git_tools import ensure_git_repo, get_current_branch, get_git_status
-from app.tools.markdown_tracking_tools import update_delivery_markdown
+from app.tools.branch_name_tools import build_feature_branch_name
+from app.tools.git_tools import (
+    ensure_git_repo,
+    get_current_branch,
+    get_git_status,
+    create_branch,
+)
 from app.tools.github_tools import (
     ensure_gh_authenticated,
     create_github_issue,
 )
+from app.tools.issue_body_tools import build_issue_spec
+from app.tools.markdown_tracking_tools import update_delivery_markdown
+
 
 app = typer.Typer(help="DeliveryOps Agent CLI")
 console = Console()
@@ -20,7 +28,10 @@ console = Console()
 @app.command()
 def init(
     repo: str = typer.Option(".", help="Path to the local repository."),
-    request: str = typer.Option("Initial DeliveryOps workspace setup.", help="Initial request text."),
+    request: str = typer.Option(
+        "Initial DeliveryOps workspace setup.",
+        help="Initial request text.",
+    ),
 ):
     repo_path = resolve_repo_path(repo)
     ensure_git_repo(repo_path)
@@ -38,7 +49,7 @@ def init(
     save_state(state)
     update_delivery_markdown(state)
 
-    console.print(f"[green]DeliveryOps workspace initialized.[/green]")
+    console.print("[green]DeliveryOps workspace initialized.[/green]")
     console.print(f"Request ID: {request_id}")
     console.print(f"Workspace: {repo_path / '.deliveryops'}")
 
@@ -55,6 +66,7 @@ def status(repo: str = typer.Option(".", help="Path to the local repository.")):
     console.print(f"Pending Action: {state.pending_action or 'none'}")
     console.print(f"Completed Steps: {', '.join(state.completed_steps) or 'none'}")
 
+
 @app.command("github-check")
 def github_check():
     ensure_gh_authenticated()
@@ -66,7 +78,8 @@ def create_issue(
     github_owner: str = typer.Option(..., help="GitHub owner/user/org."),
     github_repo: str = typer.Option(..., help="GitHub repository name."),
     title: str = typer.Option(..., help="Issue title."),
-    body: str = typer.Option(..., help="Issue body."),):
+    body: str = typer.Option(..., help="Issue body."),
+):
     issue = create_github_issue(
         owner=github_owner,
         repo=github_repo,
@@ -76,6 +89,7 @@ def create_issue(
 
     console.print("[green]GitHub issue created.[/green]")
     console.print(f"Issue #{issue.number}: {issue.url}")
+
 
 @app.command()
 def inspect(repo: str = typer.Option(".", help="Path to the local repository.")):
@@ -133,9 +147,19 @@ def run(
         state.github_issue_url = issue.url
         state.mark_completed("analyze_feature_request")
         state.mark_completed("create_github_issue")
+
+        branch_name = build_feature_branch_name(
+            issue_number=issue.number,
+            request=request,
+        )
+
+        create_branch(repo_path, branch_name)
+        state.branch_name = branch_name
+        state.mark_completed("create_feature_branch")
     else:
         state.last_error = (
-            "GitHub owner/repo was not provided. Skipping GitHub issue creation."
+            "GitHub owner/repo was not provided. "
+            "Skipping GitHub issue and branch creation."
         )
 
     save_state(state)
@@ -149,6 +173,9 @@ def run(
         console.print(f"GitHub Issue: {state.github_issue_url}")
     else:
         console.print("[yellow]GitHub issue was not created.[/yellow]")
+
+    if state.branch_name:
+        console.print(f"Branch: {state.branch_name}")
 
     console.print(f"Tracking file: {repo_path / '.deliveryops' / 'DELIVERY.md'}")
 
