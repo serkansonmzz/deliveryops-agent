@@ -1,5 +1,10 @@
 from pathlib import Path
-
+from app.tools.patch_file_tools import (
+    has_generated_patch,
+    get_default_patch_path,
+    apply_unified_diff_patch,
+    PatchApplyResult
+)
 from app.schemas.delivery_state import DeliveryState
 
 
@@ -48,3 +53,12 @@ def apply_patch_note(repo_path: Path, state: DeliveryState) -> Path:
     )
 
     return output_path
+
+
+
+def apply_available_patch(repo_path: Path, state: DeliveryState) -> PatchApplyResult | Path:
+    if has_generated_patch(repo_path):
+        patch_path = get_default_patch_path(repo_path)
+        return apply_unified_diff_patch(repo_path, patch_path)
+
+    return apply_patch_note(repo_path, state)

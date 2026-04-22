@@ -1,5 +1,5 @@
 import uuid
-
+from pathlib import Path
 import typer
 from rich.console import Console
 
@@ -21,7 +21,7 @@ from app.tools.architecture_review_tools import (
     build_architecture_review,
     build_implementation_plan,
 )
-from app.tools.apply_patch_tools import apply_patch_note
+from app.tools.apply_patch_tools import apply_available_patch
 from app.tools.approval_tools import has_approved_action
 from app.schemas.approval_record import ApprovalRecord
 from app.tools.approval_tools import append_approval_record
@@ -169,12 +169,23 @@ def apply_patch(
         )
         raise typer.Exit(code=1)
 
-    output_path = apply_patch_note(repo_path, state)
+    result = apply_available_patch(repo_path, state)
 
-    relative_output_path = output_path.relative_to(repo_path)
+    if isinstance(result, Path):
+        relative_output_path = result.relative_to(repo_path)
 
-    if str(relative_output_path) not in state.changed_files:
-        state.changed_files.append(str(relative_output_path))
+        if str(relative_output_path) not in state.changed_files:
+            state.changed_files.append(str(relative_output_path))
+
+        console.print("[green]Patch note created.[/green]")
+        console.print(f"Created: {relative_output_path}")
+    else:
+        for changed_file in result.changed_files:
+            if changed_file not in state.changed_files:
+                state.changed_files.append(changed_file)
+
+        console.print("[green]Unified diff patch applied.[/green]")
+        console.print(f"Patch file: {result.patch_path}")
 
     state.pending_action = None
     state.pending_approval = False
@@ -183,8 +194,7 @@ def apply_patch(
     save_state(state)
     update_delivery_markdown(state)
 
-    console.print("[green]Patch applied.[/green]")
-    console.print(f"Created: {relative_output_path}")
+    console.print("[green]Apply patch workflow completed.[/green]")
 
 
 @app.command("github-check")
