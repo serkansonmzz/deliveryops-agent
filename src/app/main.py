@@ -21,6 +21,8 @@ from app.tools.architecture_review_tools import (
     build_architecture_review,
     build_implementation_plan,
 )
+from app.schemas.approval_record import ApprovalRecord
+from app.tools.approval_tools import append_approval_record
 from app.tools.patch_proposal_tools import build_patch_proposal
 from app.tools.issue_body_tools import build_issue_spec
 from app.tools.markdown_tracking_tools import update_delivery_markdown
@@ -70,6 +72,86 @@ def status(repo: str = typer.Option(".", help="Path to the local repository.")):
     console.print(f"Pending Approval: {state.pending_approval}")
     console.print(f"Pending Action: {state.pending_action or 'none'}")
     console.print(f"Completed Steps: {', '.join(state.completed_steps) or 'none'}")
+
+
+@app.command()
+def approve(
+    repo: str = typer.Option(".", help="Path to the local repository."),
+    action: str = typer.Option(..., help="Action to approve."),
+    reason: str | None = typer.Option(None, help="Optional approval reason."),
+):
+    repo_path = resolve_repo_path(repo)
+    state = load_state(repo_path)
+
+    if not state.pending_approval:
+        console.print("[yellow]No approval is currently pending.[/yellow]")
+        raise typer.Exit(code=0)
+
+    if state.pending_action != action:
+        console.print(
+            f"[red]Pending action mismatch.[/red] "
+            f"Expected `{state.pending_action}`, got `{action}`."
+        )
+        raise typer.Exit(code=1)
+
+    record = ApprovalRecord(
+        request_id=state.request_id,
+        action=action,
+        decision="approved",
+        reason=reason,
+    )
+
+    append_approval_record(repo_path, record)
+
+    state.pending_approval = False
+    state.pending_action = None
+    state.last_error = None
+
+    save_state(state)
+    update_delivery_markdown(state)
+
+    console.print(f"[green]Approved action:[/green] {action}")
+    console.print(f"Approval history: {repo_path / '.deliveryops' / 'approvals.md'}")
+
+
+@app.command()
+def reject(
+    repo: str = typer.Option(".", help="Path to the local repository."),
+    action: str = typer.Option(..., help="Action to reject."),
+    reason: str | None = typer.Option(None, help="Optional rejection reason."),
+):
+    repo_path = resolve_repo_path(repo)
+    state = load_state(repo_path)
+
+    if not state.pending_approval:
+        console.print("[yellow]No approval is currently pending.[/yellow]")
+        raise typer.Exit(code=0)
+
+    if state.pending_action != action:
+        console.print(
+            f"[red]Pending action mismatch.[/red] "
+            f"Expected `{state.pending_action}`, got `{action}`."
+        )
+        raise typer.Exit(code=1)
+
+    record = ApprovalRecord(
+        request_id=state.request_id,
+        action=action,
+        decision="rejected",
+        reason=reason,
+    )
+
+    append_approval_record(repo_path, record)
+
+    state.pending_approval = False
+    state.pending_action = None
+    state.last_error = f"User rejected action: {action}"
+
+    save_state(state)
+    update_delivery_markdown(state)
+
+    console.print(f"[yellow]Rejected action:[/yellow] {action}")
+    console.print(f"Approval history: {repo_path / '.deliveryops' / 'approvals.md'}")
 
 
 @app.command("github-check")
