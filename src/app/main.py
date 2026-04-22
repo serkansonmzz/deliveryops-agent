@@ -21,6 +21,7 @@ from app.tools.architecture_review_tools import (
     build_architecture_review,
     build_implementation_plan,
 )
+from app.tools.patch_proposal_tools import build_patch_proposal
 from app.tools.issue_body_tools import build_issue_spec
 from app.tools.markdown_tracking_tools import update_delivery_markdown
 
@@ -176,6 +177,23 @@ def run(
 
         state.mark_completed("run_architecture_review")
         state.mark_completed("generate_implementation_plan")
+
+        patch_proposal = build_patch_proposal(
+            request=request,
+            likely_files=state.likely_files,
+            implementation_plan=state.implementation_plan,
+        )
+
+        state.patch_summary = patch_proposal.summary
+        state.patch_affected_files = patch_proposal.affected_files
+        state.proposed_changes = patch_proposal.proposed_changes
+        state.patch_risk_level = patch_proposal.risk_level
+
+        state.pending_action = "apply_patch"
+        state.pending_approval = True
+
+        state.mark_completed("prepare_patch")
+        state.mark_completed("request_patch_approval")
     else:
         state.last_error = (
             "GitHub owner/repo was not provided. "
@@ -186,7 +204,12 @@ def run(
     update_delivery_markdown(state)
     if state.implementation_plan:
         console.print("[green]Architecture review and implementation plan generated.[/green]")
-        
+    
+    if state.pending_approval and state.pending_action:
+        console.print(
+            f"[yellow]Waiting for approval:[/yellow] {state.pending_action}"
+        )
+
     console.print("[green]DeliveryOps run initialized.[/green]")
     console.print(f"Request ID: {request_id}")
     console.print(f"Current Step: {state.current_step}")
