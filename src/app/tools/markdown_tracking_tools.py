@@ -102,6 +102,33 @@ def render_delivery_markdown(state: DeliveryState) -> str:
     else:
         lines.append("pending")
     lines.append("")
+    lines.append("## Patch Summary")
+    lines.append("")
+    lines.append(state.patch_summary or "pending")
+    lines.append("")
+
+    lines.append("### Patch Affected Files")
+    lines.append("")
+    if state.patch_affected_files:
+        for item in state.patch_affected_files:
+            lines.append(f"- `{item}`")
+    else:
+        lines.append("- pending")
+    lines.append("")
+
+    lines.append("### Proposed Changes")
+    lines.append("")
+    if state.proposed_changes:
+        for index, item in enumerate(state.proposed_changes, start=1):
+            lines.append(f"{index}. {item}")
+    else:
+        lines.append("pending")
+    lines.append("")
+
+    lines.append("### Patch Risk Level")
+    lines.append("")
+    lines.append(state.patch_risk_level or "pending")
+    lines.append("")
     lines.append("## Test Results")
     lines.append("")
     lines.append(f"- Command: `{state.test_command or 'pending'}`")

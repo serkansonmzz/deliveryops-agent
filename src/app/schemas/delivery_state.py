@@ -35,6 +35,10 @@ class DeliveryState(BaseModel):
     security_notes: list[str] = Field(default_factory=list)
     testing_notes: list[str] = Field(default_factory=list)
     devops_notes: list[str] = Field(default_factory=list)
+    patch_summary: str | None = None
+    patch_affected_files: list[str] = Field(default_factory=list)
+    proposed_changes: list[str] = Field(default_factory=list)
+    patch_risk_level: str | None = None
     implementation_plan: list[str] = Field(default_factory=list)
 
     last_error: str | None = None
