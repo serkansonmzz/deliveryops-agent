@@ -19,7 +19,6 @@ def render_approval_record(record: ApprovalRecord) -> str:
 
 """
 
-
 def append_approval_record(repo_path: Path, record: ApprovalRecord) -> Path:
     workspace = repo_path / ".deliveryops"
     workspace.mkdir(exist_ok=True)
@@ -39,3 +38,18 @@ def append_approval_record(repo_path: Path, record: ApprovalRecord) -> Path:
     )
 
     return approvals_path
+
+
+def has_approved_action(repo_path: Path, request_id: str, action: str) -> bool:
+    approvals_path = repo_path / ".deliveryops" / "approvals.md"
+
+    if not approvals_path.exists():
+        return False
+
+    content = approvals_path.read_text(encoding="utf-8")
+
+    return (
+        f"- Request ID: `{request_id}`" in content
+        and f"- Action: `{action}`" in content
+        and "- Decision: `approved`" in content
+    )

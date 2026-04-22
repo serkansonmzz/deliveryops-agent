@@ -21,6 +21,8 @@ from app.tools.architecture_review_tools import (
     build_architecture_review,
     build_implementation_plan,
 )
+from app.tools.apply_patch_tools import apply_patch_note
+from app.tools.approval_tools import has_approved_action
 from app.schemas.approval_record import ApprovalRecord
 from app.tools.approval_tools import append_approval_record
 from app.tools.patch_proposal_tools import build_patch_proposal
@@ -152,6 +154,37 @@ def reject(
 
     console.print(f"[yellow]Rejected action:[/yellow] {action}")
     console.print(f"Approval history: {repo_path / '.deliveryops' / 'approvals.md'}")
+
+@app.command("apply-patch")
+def apply_patch(
+    repo: str = typer.Option(".", help="Path to the local repository."),
+):
+    repo_path = resolve_repo_path(repo)
+    state = load_state(repo_path)
+
+    if not has_approved_action(repo_path, state.request_id, "apply_patch"):
+        console.print(
+            "[red]Cannot apply patch.[/red] "
+            "The `apply_patch` action has not been approved."
+        )
+        raise typer.Exit(code=1)
+
+    output_path = apply_patch_note(repo_path, state)
+
+    relative_output_path = output_path.relative_to(repo_path)
+
+    if str(relative_output_path) not in state.changed_files:
+        state.changed_files.append(str(relative_output_path))
+
+    state.pending_action = None
+    state.pending_approval = False
+    state.mark_completed("apply_patch")
+
+    save_state(state)
+    update_delivery_markdown(state)
+
+    console.print("[green]Patch applied.[/green]")
+    console.print(f"Created: {relative_output_path}")
 
 
 @app.command("github-check")
