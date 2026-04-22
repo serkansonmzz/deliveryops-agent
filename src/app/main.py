@@ -21,6 +21,7 @@ from app.tools.architecture_review_tools import (
     build_architecture_review,
     build_implementation_plan,
 )
+from app.tools.patch_generator_tools import generate_patch
 from app.tools.apply_patch_tools import apply_available_patch
 from app.tools.approval_tools import has_approved_action
 from app.schemas.approval_record import ApprovalRecord
@@ -154,6 +155,48 @@ def reject(
 
     console.print(f"[yellow]Rejected action:[/yellow] {action}")
     console.print(f"Approval history: {repo_path / '.deliveryops' / 'approvals.md'}")
+
+@app.command("generate-patch")
+def generate_patch_command(
+    repo: str = typer.Option(".", help="Path to the local repository."),
+):
+    repo_path = resolve_repo_path(repo)
+    state = load_state(repo_path)
+
+    patch_path = generate_patch(repo_path, state)
+
+    if patch_path is None:
+        state.last_error = (
+            "No deterministic patch generator is available for this request yet."
+        )
+        save_state(state)
+        update_delivery_markdown(state)
+
+        console.print(
+            "[yellow]No patch generated.[/yellow] "
+            "This request is not supported by the deterministic patch generator yet."
+        )
+        raise typer.Exit(code=0)
+
+    state.mark_completed("prepare_patch")
+    state.patch_summary = (
+        "A deterministic unified diff patch was generated and saved to "
+        ".deliveryops/generated.patch."
+    )
+
+    if "README.md" not in state.patch_affected_files:
+        state.patch_affected_files.append("README.md")
+
+    if "Generated a README documentation update patch." not in state.proposed_changes:
+        state.proposed_changes.append("Generated a README documentation update patch.")
+
+    save_state(state)
+    update_delivery_markdown(state)
+
+    console.print("[green]Patch generated.[/green]")
+    console.print(f"Patch file: {patch_path.relative_to(repo_path)}")
+
+
 
 @app.command("apply-patch")
 def apply_patch(
