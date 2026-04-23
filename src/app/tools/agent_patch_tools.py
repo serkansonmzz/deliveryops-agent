@@ -7,7 +7,11 @@ from app.schemas.agent_patch_response import AgentPatchResponse
 from app.schemas.delivery_state import DeliveryState
 from app.tools.diff_tools import write_generated_patch
 from app.tools.repo_context_tools import collect_repo_context
-
+from app.tools.patch_sanitizer_tools import sanitize_agent_patch_output
+from app.tools.patch_validator_tools import (
+    validate_unified_diff_or_raise,
+    validate_patch_can_apply_or_raise,
+)
 
 DEV_AGENT_INSTRUCTIONS = """
 You are a careful software delivery patch generator.
@@ -68,10 +72,25 @@ def generate_patch_with_agent(repo_path: Path, state: DeliveryState) -> Path | N
     )
 
     response = agent.run(build_agent_patch_prompt(context))
-
     content = response.content
 
-    if not content or not content.unified_diff.strip():
-        return None
+    debug_path = repo_path / ".deliveryops" / "agent_raw_output.txt"
+    debug_path.parent.mkdir(exist_ok=True)
+    debug_path.write_text(str(content), encoding="utf-8")
 
-    return write_generated_patch(repo_path, content.unified_diff)
+    if not content or not content.unified_diff.strip():
+        raise RuntimeError("Agent output did not contain a usable unified diff patch.") 
+
+    patch_text = sanitize_agent_patch_output(content.unified_diff)
+
+    if not patch_text:
+        raise RuntimeError("Agent output did not contain a usable unified diff patch.")
+
+    generated_patch_path = repo_path / ".deliveryops" / "generated.patch"
+    if generated_patch_path.exists():
+        generated_patch_path.unlink()
+
+    validate_unified_diff_or_raise(patch_text)
+    validate_patch_can_apply_or_raise(repo_path, patch_text)
+
+    return write_generated_patch(repo_path, patch_text)
