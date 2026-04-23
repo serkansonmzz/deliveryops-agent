@@ -21,6 +21,7 @@ from app.tools.architecture_review_tools import (
     build_architecture_review,
     build_implementation_plan,
 )
+from app.tools.agent_patch_tools import generate_patch_with_agent
 from app.tools.patch_generator_tools import generate_patch
 from app.tools.apply_patch_tools import apply_available_patch
 from app.tools.approval_tools import has_approved_action
@@ -196,7 +197,40 @@ def generate_patch_command(
     console.print("[green]Patch generated.[/green]")
     console.print(f"Patch file: {patch_path.relative_to(repo_path)}")
 
+@app.command("dev-generate-patch")
+def dev_generate_patch_command(
+    repo: str = typer.Option(".", help="Path to the local repository."),
+):
+    repo_path = resolve_repo_path(repo)
+    state = load_state(repo_path)
 
+    patch_path = generate_patch_with_agent(repo_path, state)
+
+    if patch_path is None:
+        state.last_error = "Dev Agent could not generate a patch from the available context."
+        save_state(state)
+        update_delivery_markdown(state)
+
+        console.print(
+            "[yellow]No patch generated.[/yellow] "
+            "The Dev Agent could not produce a usable patch."
+        )
+        raise typer.Exit(code=0)
+
+    state.mark_completed("prepare_patch")
+    state.patch_summary = (
+        "An Agno Dev Agent generated a unified diff patch and saved it to "
+        ".deliveryops/generated.patch."
+    )
+
+    if ".deliveryops/generated.patch" not in state.changed_files:
+        state.changed_files.append(".deliveryops/generated.patch")
+
+    save_state(state)
+    update_delivery_markdown(state)
+
+    console.print("[green]Agent patch generated.[/green]")
+    console.print(f"Patch file: {patch_path.relative_to(repo_path)}")
 
 @app.command("apply-patch")
 def apply_patch(
