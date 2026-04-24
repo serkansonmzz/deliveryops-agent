@@ -21,6 +21,7 @@ from app.tools.architecture_review_tools import (
     build_architecture_review,
     build_implementation_plan,
 )
+from app.tools.commit_message_tools import build_commit_message_spec
 from app.tools.agent_patch_tools import generate_patch_with_agent
 from app.tools.patch_generator_tools import generate_patch
 from app.tools.apply_patch_tools import apply_available_patch
@@ -273,6 +274,41 @@ def apply_patch(
 
     console.print("[green]Apply patch workflow completed.[/green]")
 
+@app.command("generate-commit-message")
+def generate_commit_message_command(
+    repo: str = typer.Option(".", help="Path to the local repository."),
+):
+    repo_path = resolve_repo_path(repo)
+    state = load_state(repo_path)
+
+    commit_spec = build_commit_message_spec(repo_path, state)
+
+    if not commit_spec.changed_files:
+        state.last_error = "No changed files detected. Commit message was not generated."
+        save_state(state)
+        update_delivery_markdown(state)
+
+        console.print("[yellow]No changed files detected.[/yellow]")
+        raise typer.Exit(code=0)
+
+    state.commit_message = commit_spec.subject
+    state.commit_body = commit_spec.body
+    state.commit_diff_summary = commit_spec.diff_summary
+    state.commit_rationale = commit_spec.rationale
+    state.changed_files = commit_spec.changed_files
+
+    state.pending_action = "git_commit"
+    state.pending_approval = True
+
+    state.mark_completed("generate_commit_message")
+    state.mark_completed("request_commit_approval")
+
+    save_state(state)
+    update_delivery_markdown(state)
+
+    console.print("[green]Commit message generated.[/green]")
+    console.print(f"Subject: {commit_spec.subject}")
+    console.print("[yellow]Waiting for approval:[/yellow] git_commit")
 
 @app.command("github-check")
 def github_check():

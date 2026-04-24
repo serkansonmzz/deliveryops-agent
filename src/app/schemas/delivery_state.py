@@ -40,6 +40,10 @@ class DeliveryState(BaseModel):
     proposed_changes: list[str] = Field(default_factory=list)
     patch_risk_level: str | None = None
     implementation_plan: list[str] = Field(default_factory=list)
+    commit_message: str | None = None
+    commit_body: str | None = None
+    commit_rationale: str | None = None
+    commit_diff_summary: str | None = None
 
     last_error: str | None = None
     pr_url: str | None = None
