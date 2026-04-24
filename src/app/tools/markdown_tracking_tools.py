@@ -128,6 +128,16 @@ def render_delivery_markdown(state: DeliveryState) -> str:
     lines.append("## Commit Message Proposal")
     lines.append("")
     lines.append(f"- Subject: `{state.commit_message or 'pending'}`")
+    lines.append(f"- Commit Hash: `{state.commit_hash or 'pending'}`")
+    lines.append("")
+
+    lines.append("### Committed Files")
+    lines.append("")
+    if state.committed_files:
+        for file_path in state.committed_files:
+            lines.append(f"- `{file_path}`")
+    else:
+        lines.append("- pending")
     lines.append("")
     lines.append("### Commit Body")
     lines.append("")
