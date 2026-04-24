@@ -44,6 +44,9 @@ class DeliveryState(BaseModel):
     commit_body: str | None = None
     commit_rationale: str | None = None
     commit_diff_summary: str | None = None
+    commit_files: list[str] = Field(default_factory=list)
+    committed_files: list[str] = Field(default_factory=list)
+    commit_hash: str | None = None
 
     last_error: str | None = None
     pr_url: str | None = None

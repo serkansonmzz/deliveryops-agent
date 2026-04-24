@@ -21,13 +21,16 @@ from app.tools.architecture_review_tools import (
     build_architecture_review,
     build_implementation_plan,
 )
+from app.tools.commit_tools import (
+    get_commit_candidate_files,
+    create_git_commit,
+)
 from app.tools.commit_message_tools import build_commit_message_spec
 from app.tools.agent_patch_tools import generate_patch_with_agent
 from app.tools.patch_generator_tools import generate_patch
 from app.tools.apply_patch_tools import apply_available_patch
-from app.tools.approval_tools import has_approved_action
+from app.tools.approval_tools import append_approval_record, has_approved_action
 from app.schemas.approval_record import ApprovalRecord
-from app.tools.approval_tools import append_approval_record
 from app.tools.patch_proposal_tools import build_patch_proposal
 from app.tools.issue_body_tools import build_issue_spec
 from app.tools.markdown_tracking_tools import update_delivery_markdown
@@ -310,6 +313,59 @@ def generate_commit_message_command(
     console.print(f"Subject: {commit_spec.subject}")
     console.print("[yellow]Waiting for approval:[/yellow] git_commit")
 
+@app.command("commit")
+def commit_command(
+    repo: str = typer.Option(".", help="Path to the local repository."),
+):
+    repo_path = resolve_repo_path(repo)
+    state = load_state(repo_path)
+
+    if not has_approved_action(repo_path, state.request_id, "git_commit"):
+        console.print(
+            "[red]Cannot commit changes.[/red] "
+            "The `git_commit` action has not been approved."
+        )
+        raise typer.Exit(code=1)
+
+    if not state.commit_message:
+        console.print(
+            "[red]Cannot commit changes.[/red] "
+            "No commit message has been generated yet."
+        )
+        raise typer.Exit(code=1)
+
+    candidate_files = get_commit_candidate_files(repo_path)
+
+    if not candidate_files:
+        state.last_error = "No commit-safe changed files detected."
+        save_state(state)
+        update_delivery_markdown(state)
+
+        console.print("[yellow]No commit-safe changed files detected.[/yellow]")
+        raise typer.Exit(code=0)
+
+    result = create_git_commit(
+        repo_path=repo_path,
+        subject=state.commit_message,
+        body=state.commit_body,
+        files=candidate_files,
+    )
+
+    state.commit_hash = result.commit_hash
+    state.committed_files = result.committed_files
+    state.changed_files = result.committed_files
+
+    state.pending_action = None
+    state.pending_approval = False
+
+    state.mark_completed("commit_changes")
+
+    save_state(state)
+    update_delivery_markdown(state)
+
+    console.print("[green]Git commit created.[/green]")
+    console.print(f"Commit: {result.commit_hash}")
+    console.print(f"Subject: {result.subject}")
 @app.command("github-check")
 def github_check():
     ensure_gh_authenticated()
