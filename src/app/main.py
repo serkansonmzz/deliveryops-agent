@@ -25,6 +25,7 @@ from app.tools.commit_tools import (
     get_commit_candidate_files,
     create_git_commit,
 )
+from app.tools.push_tools import push_current_branch
 from app.tools.commit_message_tools import build_commit_message_spec
 from app.tools.agent_patch_tools import generate_patch_with_agent
 from app.tools.patch_generator_tools import generate_patch
@@ -355,17 +356,55 @@ def commit_command(
     state.committed_files = result.committed_files
     state.changed_files = result.committed_files
 
-    state.pending_action = None
-    state.pending_approval = False
+    state.pending_action = "git_push"
+    state.pending_approval = True
 
     state.mark_completed("commit_changes")
+    state.mark_completed("request_push_approval")
 
     save_state(state)
     update_delivery_markdown(state)
 
     console.print("[green]Git commit created.[/green]")
+    console.print("[yellow]Waiting for approval:[/yellow] git_push")
     console.print(f"Commit: {result.commit_hash}")
     console.print(f"Subject: {result.subject}")
+
+@app.command("push")
+def push_command(
+    repo: str = typer.Option(".", help="Path to the local repository."),
+    remote: str = typer.Option("origin", help="Git remote name."),
+):
+    repo_path = resolve_repo_path(repo)
+    state = load_state(repo_path)
+
+    if not has_approved_action(repo_path, state.request_id, "git_push"):
+        console.print(
+            "[red]Cannot push branch.[/red] "
+            "The `git_push` action has not been approved."
+        )
+        raise typer.Exit(code=1)
+
+    result = push_current_branch(repo_path, remote=remote)
+
+    state.push_remote = result.remote
+    state.pushed_branch = result.branch_name
+    state.push_status = "pushed"
+    state.push_output = result.stdout or result.stderr or "Push completed."
+
+    state.pending_action = None
+    state.pending_approval = False
+
+    state.mark_completed("push_branch")
+
+    save_state(state)
+    update_delivery_markdown(state)
+
+    console.print("[green]Branch pushed.[/green]")
+    console.print(f"Remote: {result.remote}")
+    console.print(f"Branch: {result.branch_name}")
+
+
 @app.command("github-check")
 def github_check():
     ensure_gh_authenticated()

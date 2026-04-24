@@ -131,6 +131,14 @@ def render_delivery_markdown(state: DeliveryState) -> str:
     lines.append(f"- Commit Hash: `{state.commit_hash or 'pending'}`")
     lines.append("")
 
+    lines.append("## Push Status")
+    lines.append("")
+    lines.append(f"- Remote: `{state.push_remote or 'pending'}`")
+    lines.append(f"- Branch: `{state.push_branch or 'pending'}`")
+    lines.append(f"- Status: `{state.push_status or 'pending'}`")
+    lines.append(f"- Output: `{state.push_output or 'pending'}`")
+    lines.append("")
+
     lines.append("### Committed Files")
     lines.append("")
     if state.committed_files:
