@@ -48,6 +48,11 @@ class DeliveryState(BaseModel):
     committed_files: list[str] = Field(default_factory=list)
     commit_hash: str | None = None
 
+    push_remote: str | None = None
+    push_branch: str | None = None
+    push_status: str | None = None
+    push_output: str | None = None
+
     last_error: str | None = None
     pr_url: str | None = None
 
