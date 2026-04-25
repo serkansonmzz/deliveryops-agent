@@ -25,6 +25,11 @@ from app.tools.commit_tools import (
     get_commit_candidate_files,
     create_git_commit,
 )
+from app.tools.pull_request_tools import (
+    create_draft_pull_request,
+    build_pull_request_body,
+    build_pull_request_title,
+)
 from app.tools.push_tools import push_current_branch
 from app.tools.commit_message_tools import build_commit_message_spec
 from app.tools.agent_patch_tools import generate_patch_with_agent
@@ -392,18 +397,61 @@ def push_command(
     state.push_status = "pushed"
     state.push_output = result.stdout or result.stderr or "Push completed."
 
-    state.pending_action = None
-    state.pending_approval = False
+    state.pending_action = "create_draft_pull_request"
+    state.pending_approval = True
 
     state.mark_completed("push_branch")
+    state.mark_completed("request_pr_approval")
 
     save_state(state)
     update_delivery_markdown(state)
 
+    console.print("[yellow]Waiting for approval:[/yellow] create_draft_pull_request")
     console.print("[green]Branch pushed.[/green]")
     console.print(f"Remote: {result.remote}")
     console.print(f"Branch: {result.branch_name}")
 
+@app.command("open-draft-pr")
+def open_draft_pr_command(
+    repo: str = typer.Option(".", help="Path to the local repository."),
+    base_branch: str = typer.Option("main", help="Base branch for the pull request."),
+):
+    repo_path = resolve_repo_path(repo)
+    state = load_state(repo_path)
+
+    if not has_approved_action(repo_path, state.request_id, "create_draft_pull_request"):
+        console.print(
+            "[red]Cannot open draft PR.[/red] "
+            "The `create_draft_pull_request` action has not been approved."
+        )
+        raise typer.Exit(code=1)
+
+    pr_body = build_pull_request_body(state)
+    pr_title = build_pull_request_title(state)
+
+    result = create_draft_pull_request(
+        repo_path=repo_path,
+        state=state,
+        base_branch=base_branch,
+    )
+
+    state.pr_url = result.url
+    state.pr_title = pr_title
+    state.pr_body = pr_body
+    state.pr_base_branch = result.base_branch
+    state.pr_head_branch = result.head_branch
+    state.pr_status = "draft_opened"
+
+    state.pending_action = None
+    state.pending_approval = False
+
+    state.mark_completed("open_draft_pr")
+
+    save_state(state)
+    update_delivery_markdown(state)
+
+    console.print("[green]Draft pull request opened.[/green]")
+    console.print(f"PR: {result.url}")
 
 @app.command("github-check")
 def github_check():

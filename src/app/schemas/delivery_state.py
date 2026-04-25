@@ -55,6 +55,11 @@ class DeliveryState(BaseModel):
 
     last_error: str | None = None
     pr_url: str | None = None
+    pr_title: str | None = None
+    pr_body: str | None = None
+    pr_base_branch: str | None = None
+    pr_head_branch: str | None = None
+    pr_status: str | None = None
 
     created_at: str = Field(default_factory=utc_now_iso)
     updated_at: str = Field(default_factory=utc_now_iso)

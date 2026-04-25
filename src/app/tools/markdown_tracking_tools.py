@@ -139,6 +139,19 @@ def render_delivery_markdown(state: DeliveryState) -> str:
     lines.append(f"- Output: `{state.push_output or 'pending'}`")
     lines.append("")
 
+    lines.append("## Pull Request Status")
+    lines.append("")
+    lines.append(f"- URL: `{state.pr_url or 'pending'}`")
+    lines.append(f"- Title: `{state.pr_title or 'pending'}`")
+    lines.append(f"- Base Branch: `{state.pr_base_branch or 'pending'}`")
+    lines.append(f"- Head Branch: `{state.pr_head_branch or 'pending'}`")
+    lines.append(f"- Status: `{state.pr_status or 'pending'}`")
+    lines.append("")
+    lines.append("### Pull Request Body")
+    lines.append("")
+    lines.append(state.pr_body or "pending")
+    lines.append("")
+
     lines.append("### Committed Files")
     lines.append("")
     if state.committed_files:
