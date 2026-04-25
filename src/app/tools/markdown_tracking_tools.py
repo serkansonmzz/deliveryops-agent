@@ -152,6 +152,18 @@ def render_delivery_markdown(state: DeliveryState) -> str:
     lines.append(state.pr_body or "pending")
     lines.append("")
 
+    lines.append("## Issue Comment Status")
+    lines.append("")
+    lines.append(f"- Comment Count: `{state.issue_comment_count}`")
+    lines.append(f"- Last Comment URL: `{state.last_issue_comment_url or 'pending'}`")
+    lines.append("")
+
+    lines.append("## Final Report")
+    lines.append("")
+    lines.append(f"- Path: `{state.final_report_path or 'pending'}`")
+    lines.append(f"- Status: `{state.final_report_status or 'pending'}`")
+    lines.append("")
+
     lines.append("### Committed Files")
     lines.append("")
     if state.committed_files:
