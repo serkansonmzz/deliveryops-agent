@@ -61,6 +61,11 @@ class DeliveryState(BaseModel):
     pr_head_branch: str | None = None
     pr_status: str | None = None
 
+    issue_comment_count: int = 0
+    last_issue_comment_url: str | None = None
+    final_report_path: str | None = None
+    final_report_status: str | None = None
+
     created_at: str = Field(default_factory=utc_now_iso)
     updated_at: str = Field(default_factory=utc_now_iso)
 

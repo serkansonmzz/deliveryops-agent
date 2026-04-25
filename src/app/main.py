@@ -13,6 +13,11 @@ from app.tools.git_tools import (
     get_git_status,
     create_branch,
 )
+from app.tools.issue_comment_tools import post_progress_comment
+from app.tools.delivery_report_tools import (
+    build_final_report,
+    write_final_report,
+)
 from app.tools.github_tools import (
     ensure_gh_authenticated,
     create_github_issue,
@@ -458,7 +463,49 @@ def github_check():
     ensure_gh_authenticated()
     console.print("[green]GitHub CLI is available and authenticated.[/green]")
 
+@app.command("comment-progress")
+def comment_progress_command(
+    repo: str = typer.Option(".", help="Path to the local repository."),
+):
+    repo_path = resolve_repo_path(repo)
+    state = load_state(repo_path)
 
+    comment_output = post_progress_comment(repo_path, state)
+
+    state.issue_comment_count += 1
+    state.last_issue_comment_url = comment_output.strip() or None
+
+    state.mark_completed("comment_progress")
+
+    save_state(state)
+    update_delivery_markdown(state)
+
+    console.print("[green]Progress comment posted.[/green]")
+
+    if state.last_issue_comment_url:
+        console.print(f"Comment: {state.last_issue_comment_url}")
+
+
+@app.command("final-report")
+def final_report_command(
+    repo: str = typer.Option(".", help="Path to the local repository."),
+):
+    repo_path = resolve_repo_path(repo)
+    state = load_state(repo_path)
+
+    report = build_final_report(state)
+    report_path = write_final_report(repo_path, report)
+
+    state.final_report_path = str(report_path.relative_to(repo_path))
+    state.final_report_status = "generated"
+
+    state.mark_completed("generate_final_report")
+
+    save_state(state)
+    update_delivery_markdown(state)
+
+    console.print("[green]Final report generated.[/green]")
+    console.print(f"Report: {state.final_report_path}")
 @app.command("create-issue")
 def create_issue(
     github_owner: str = typer.Option(..., help="GitHub owner/user/org."),
