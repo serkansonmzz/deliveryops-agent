@@ -7,6 +7,7 @@ from app.config import resolve_repo_path
 from app.schemas.delivery_state import DeliveryState
 from app.state_store import ensure_workspace, save_state, load_state
 from app.tools.branch_name_tools import build_feature_branch_name
+from app.tools.workflow_resume_tools import determine_next_workflow_step
 from app.tools.git_tools import (
     ensure_git_repo,
     get_current_branch,
@@ -486,7 +487,32 @@ def comment_progress_command(
     if state.last_issue_comment_url:
         console.print(f"Comment: {state.last_issue_comment_url}")
 
+@app.command("continue")
+def continue_workflow_command(
+    repo: str = typer.Option(".", help="Path to the local repository."),
+):
+    repo_path = resolve_repo_path(repo)
+    state = load_state(repo_path)
 
+    decision = determine_next_workflow_step(repo_path, state)
+
+    console.print("[bold]DeliveryOps Continue[/bold]")
+    console.print(f"Status: {decision.status}")
+    console.print(f"Reason: {decision.reason}")
+
+    if decision.next_action:
+        console.print(f"Next Action: {decision.next_action}")
+
+    if decision.next_command:
+        console.print("")
+        console.print("[bold]Next Command[/bold]")
+        console.print(decision.next_command)
+
+    if decision.notes:
+        console.print("")
+        console.print("[bold]Notes[/bold]")
+        for note in decision.notes:
+            console.print(f"- {note}")
 @app.command("final-report")
 def final_report_command(
     repo: str = typer.Option(".", help="Path to the local repository."),

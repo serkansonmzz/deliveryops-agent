@@ -56,3 +56,10 @@ Run a local end-to-end smoke test without touching the real GitHub repository:
 
 ```bash
 deliveryops smoke-test --repo .
+
+## Continue Workflow
+Resume a partially completed DeliveryOps workflow by asking for the next recommended command:
+
+```bash
+deliveryops continue --repo .
+```
