@@ -70,13 +70,30 @@ def test_continue_runs_apply_patch_after_approval(tmp_path: Path):
     assert "apply-patch" in decision.next_command
 
 
-def test_continue_generates_commit_message_after_patch_applied(tmp_path: Path):
+def test_continue_detects_tests_after_patch_applied(tmp_path: Path):
     state = DeliveryState(
         request_id="req_test",
         repo_path=str(tmp_path),
         original_request="Update README documentation",
     )
     state.mark_completed("apply_patch")
+
+    decision = determine_next_workflow_step(tmp_path, state)
+
+    assert decision.status == "ready"
+    assert decision.next_action == "detect_tests"
+    assert "detect-tests" in decision.next_command
+
+
+def test_continue_generates_commit_message_after_tests(tmp_path: Path):
+    state = DeliveryState(
+        request_id="req_test",
+        repo_path=str(tmp_path),
+        original_request="Update README documentation",
+    )
+    state.mark_completed("apply_patch")
+    state.mark_completed("detect_tests")
+    state.test_status = "not_detected"
 
     decision = determine_next_workflow_step(tmp_path, state)
 
@@ -92,6 +109,7 @@ def test_continue_requires_git_commit_approval(tmp_path: Path):
         original_request="Update README documentation",
     )
     state.mark_completed("apply_patch")
+    state.mark_completed("detect_tests")
     state.mark_completed("generate_commit_message")
 
     decision = determine_next_workflow_step(tmp_path, state)
@@ -108,6 +126,7 @@ def test_continue_runs_commit_after_approval(tmp_path: Path):
         original_request="Update README documentation",
     )
     state.mark_completed("apply_patch")
+    state.mark_completed("detect_tests")
     state.mark_completed("generate_commit_message")
 
     approve(tmp_path, state, "git_commit")
@@ -128,6 +147,7 @@ def test_continue_completed_workflow(tmp_path: Path):
 
     for step in [
         "apply_patch",
+        "detect_tests",
         "generate_commit_message",
         "commit_changes",
         "push_branch",

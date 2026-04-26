@@ -6,16 +6,60 @@ from app.state_store import save_state
 from app.tools.commit_message_tools import build_commit_message_spec
 from app.tools.delivery_report_tools import build_final_report, write_final_report
 from app.tools.markdown_tracking_tools import update_delivery_markdown
+from app.tools.test_tools import detect_test_command, run_safe_test_command
 from app.tools.workflow_resume_tools import determine_next_workflow_step
 
 
 SAFE_AUTO_ACTIONS = {
+    "detect_tests",
+    "run_tests",
     "generate_commit_message",
     "final_report",
 }
 
 
 def execute_safe_action(repo_path: Path, state: DeliveryState, action: str) -> None:
+    if action == "detect_tests":
+        command = detect_test_command(repo_path)
+
+        if command is None:
+            state.test_status = "not_detected"
+            state.test_command = None
+            state.test_summary = "No known test command was detected."
+        else:
+            state.test_command = command
+            state.test_status = "detected"
+            state.test_summary = f"Detected test command: {command}"
+
+        state.mark_completed("detect_tests")
+
+        save_state(state)
+        update_delivery_markdown(state)
+        return
+
+    if action == "run_tests":
+        if not state.test_command:
+            state.test_status = "not_detected"
+            state.test_summary = "No test command is available to run."
+            save_state(state)
+            update_delivery_markdown(state)
+            return
+
+        result = run_safe_test_command(repo_path, state.test_command)
+
+        state.test_status = result.status
+        state.test_exit_code = result.exit_code
+        state.test_output = "\n".join(
+            part for part in [result.stdout, result.stderr] if part.strip()
+        )
+        state.test_summary = result.summary
+
+        state.mark_completed("run_tests")
+
+        save_state(state)
+        update_delivery_markdown(state)
+        return
+
     if action == "generate_commit_message":
         commit_spec = build_commit_message_spec(repo_path, state)
 

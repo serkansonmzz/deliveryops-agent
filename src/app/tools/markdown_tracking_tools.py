@@ -194,6 +194,13 @@ def render_delivery_markdown(state: DeliveryState) -> str:
     lines.append("")
     lines.append(f"- Command: `{state.test_command or 'pending'}`")
     lines.append(f"- Status: `{state.test_status or 'pending'}`")
+    lines.append(
+        f"- Exit Code: `{state.test_exit_code if state.test_exit_code is not None else 'pending'}`"
+    )
+    lines.append("")
+    lines.append("### Test Summary")
+    lines.append("")
+    lines.append(state.test_summary or "pending")
     lines.append("")
 
     lines.append("## Changed Files")
