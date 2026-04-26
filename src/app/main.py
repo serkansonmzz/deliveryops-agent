@@ -35,6 +35,7 @@ from app.tools.pull_request_tools import (
     build_pull_request_body,
     build_pull_request_title,
 )
+from app.tools.smoke_test_tools import run_local_smoke_test
 from app.tools.push_tools import push_current_branch
 from app.tools.commit_message_tools import build_commit_message_spec
 from app.tools.agent_patch_tools import generate_patch_with_agent
@@ -538,6 +539,30 @@ def inspect(repo: str = typer.Option(".", help="Path to the local repository."))
     console.print("")
     console.print("[bold]Git Status[/bold]")
     console.print(status_text or "Working tree clean.")
+
+@app.command("smoke-test")
+def smoke_test_command(
+    repo: str = typer.Option(".", help="Path to the local repository."),
+):
+    repo_path = resolve_repo_path(repo)
+
+    workspace_path = (
+        repo_path
+        / ".deliveryops"
+        / "smoke-tests"
+        / f"smoke_{uuid.uuid4().hex[:8]}"
+    )
+
+    result = run_local_smoke_test(workspace_path)
+
+    console.print("[green]DeliveryOps smoke test completed.[/green]")
+    console.print(f"Passed: {result.passed}")
+    console.print(f"Workspace: {result.workspace_path}")
+    console.print(f"Repo: {result.repo_path}")
+    console.print(f"Remote: {result.remote_path}")
+    console.print(f"Branch: {result.branch_name}")
+    console.print(f"Commit: {result.commit_hash}")
+    console.print(f"Final report: {result.final_report_path}")
 
 
 @app.command()
