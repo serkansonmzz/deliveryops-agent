@@ -29,6 +29,7 @@ def test_auto_continue_generates_commit_message(tmp_path: Path):
     )
 
     state.mark_completed("apply_patch")
+    state.mark_completed("detect_tests")
 
     result = run_safe_auto_continue(tmp_path, state)
 
@@ -46,6 +47,7 @@ def test_auto_continue_stops_when_approval_required(tmp_path: Path):
     )
 
     state.mark_completed("apply_patch")
+    state.mark_completed("detect_tests")
     state.mark_completed("generate_commit_message")
 
     result = run_safe_auto_continue(tmp_path, state)
@@ -63,6 +65,7 @@ def test_auto_continue_generates_final_report(tmp_path: Path):
 
     for step in [
         "apply_patch",
+        "detect_tests",
         "generate_commit_message",
         "commit_changes",
         "push_branch",

@@ -66,6 +66,34 @@ def determine_next_workflow_step(repo_path: Path, state: DeliveryState) -> Conti
             safe_to_run=False,
         )
 
+    if not has_step(state, "detect_tests"):
+        return ContinueDecision(
+            status="ready",
+            next_action="detect_tests",
+            next_command=build_deliveryops_command("detect-tests"),
+            reason="Patch has been applied. Detect the test command next.",
+            safe_to_run=True,
+        )
+
+    if state.test_command and not has_step(state, "run_tests"):
+        return ContinueDecision(
+            status="ready",
+            next_action="run_tests",
+            next_command=build_deliveryops_command("run-tests"),
+            reason="A safe test command was detected. Run tests before generating the commit message.",
+            safe_to_run=True,
+        )
+
+    if state.test_status == "failed":
+        return ContinueDecision(
+            status="blocked",
+            next_action=None,
+            next_command=None,
+            reason="Tests failed. Fix the issue before continuing to commit.",
+            safe_to_run=False,
+            notes=["Check DELIVERY.md for the test summary."],
+        )
+
     if not has_step(state, "generate_commit_message"):
         return ContinueDecision(
             status="ready",

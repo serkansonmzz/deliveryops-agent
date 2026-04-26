@@ -50,6 +50,21 @@ deliveryops run \
 
 ```
 
+## Test Detection and Safe Test Runner
+
+Detect a safe test command:
+
+```bash
+deliveryops detect-tests --repo .
+```
+
+Run the detected safe test command:
+
+```bash
+deliveryops run-tests --repo .
+```
+
+DeliveryOps only runs allowlisted test commands such as `uv run pytest -q`, `python -m pytest -q`, `pytest -q`, or package manager test commands.
 ## Smoke Test
 
 Run a local end-to-end smoke test without touching the real GitHub repository:

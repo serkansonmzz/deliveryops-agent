@@ -25,6 +25,9 @@ class DeliveryState(BaseModel):
 
     test_status: str | None = None
     test_command: str | None = None
+    test_exit_code: int | None = None
+    test_output: str | None = None
+    test_summary: str | None = None
     changed_files: list[str] = Field(default_factory=list)
 
     architecture_review_summary: str | None = None
