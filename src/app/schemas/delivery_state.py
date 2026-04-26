@@ -49,7 +49,7 @@ class DeliveryState(BaseModel):
     commit_hash: str | None = None
 
     push_remote: str | None = None
-    push_branch: str | None = None
+    pushed_branch: str | None = None
     push_status: str | None = None
     push_output: str | None = None
 

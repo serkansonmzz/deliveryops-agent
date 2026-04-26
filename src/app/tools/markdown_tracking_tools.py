@@ -134,7 +134,7 @@ def render_delivery_markdown(state: DeliveryState) -> str:
     lines.append("## Push Status")
     lines.append("")
     lines.append(f"- Remote: `{state.push_remote or 'pending'}`")
-    lines.append(f"- Branch: `{state.push_branch or 'pending'}`")
+    lines.append(f"- Branch: `{state.pushed_branch or 'pending'}`")
     lines.append(f"- Status: `{state.push_status or 'pending'}`")
     lines.append(f"- Output: `{state.push_output or 'pending'}`")
     lines.append("")
