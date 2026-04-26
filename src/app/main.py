@@ -15,6 +15,7 @@ from app.tools.git_tools import (
     create_branch,
 )
 from app.tools.issue_comment_tools import post_progress_comment
+from app.tools.auto_continue_tools import run_safe_auto_continue
 from app.tools.delivery_report_tools import (
     build_final_report,
     write_final_report,
@@ -549,7 +550,37 @@ def create_issue(
 
     console.print("[green]GitHub issue created.[/green]")
     console.print(f"Issue #{issue.number}: {issue.url}")
+@app.command("auto-continue")
+def auto_continue_command(
+    repo: str = typer.Option(".", help="Path to the local repository."),
+    max_steps: int = typer.Option(5, help="Maximum number of safe steps to execute."),
+):
+    repo_path = resolve_repo_path(repo)
+    state = load_state(repo_path)
 
+    result = run_safe_auto_continue(
+        repo_path=repo_path,
+        state=state,
+        max_steps=max_steps,
+    )
+
+    console.print("[bold]DeliveryOps Auto-Continue[/bold]")
+
+    if result.executed_actions:
+        console.print("[green]Executed safe actions:[/green]")
+        for action in result.executed_actions:
+            console.print(f"- {action}")
+    else:
+        console.print("[yellow]No safe action was executed.[/yellow]")
+
+    console.print("")
+    console.print(f"Stopped Reason: {result.stopped_reason}")
+
+    if result.stopped_at_action:
+        console.print(f"Stopped At: {result.stopped_at_action}")
+
+    if result.completed:
+        console.print("[green]Workflow completed.[/green]")
 
 @app.command()
 def inspect(repo: str = typer.Option(".", help="Path to the local repository.")):
