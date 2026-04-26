@@ -49,3 +49,10 @@ deliveryops run \
   --request "Add a healthcheck endpoint"
 
 ```
+
+## Smoke Test
+
+Run a local end-to-end smoke test without touching the real GitHub repository:
+
+```bash
+deliveryops smoke-test --repo .
