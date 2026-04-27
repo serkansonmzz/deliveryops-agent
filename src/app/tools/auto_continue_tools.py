@@ -9,6 +9,7 @@ from app.tools.markdown_tracking_tools import update_delivery_markdown
 from app.tools.test_tools import detect_test_command, run_safe_test_command
 from app.tools.workflow_resume_tools import determine_next_workflow_step
 from app.tools.test_failure_analysis_tools import analyze_test_failure
+from app.tools.policy_profile_tools import get_safe_auto_actions_for_profile
 from app.tools.release_judge_tools import (
     evaluate_release_readiness,
     apply_readiness_result_to_state,
@@ -153,7 +154,9 @@ def run_safe_auto_continue(
                 completed=True,
             )
 
-        if decision.next_action not in SAFE_AUTO_ACTIONS:
+        safe_auto_actions = get_safe_auto_actions_for_profile(state.policy_profile)
+
+        if decision.next_action not in safe_auto_actions:
             return AutoContinueResult(
                 executed_actions=executed_actions,
                 stopped_at_action=decision.next_action,

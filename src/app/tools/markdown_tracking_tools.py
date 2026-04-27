@@ -45,6 +45,21 @@ def render_delivery_markdown(state: DeliveryState) -> str:
     lines.append(f"- Draft PR: `{state.pr_url or 'pending'}`")
     lines.append(f"- Current Step: `{state.current_step}`")
     lines.append(f"- Pending Approval: `{state.pending_approval}`")
+    lines.append(f"- Policy Profile: `{state.policy_profile}`")
+    lines.append("")
+
+    lines.append("## Policy Profile")
+    lines.append("")
+    lines.append(f"- Active Profile: `{state.policy_profile}`")
+    lines.append(f"- Last Policy Decision: `{state.last_policy_decision or 'pending'}`")
+    lines.append("")
+    lines.append("### Policy Warnings")
+    lines.append("")
+    if state.policy_warnings:
+        for warning in state.policy_warnings:
+            lines.append(f"- {warning}")
+    else:
+        lines.append("- pending")
     lines.append("")
 
     lines.append("## Checklist")
