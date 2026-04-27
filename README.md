@@ -77,6 +77,22 @@ deliveryops readiness-check --repo .
 
 The check reviews patch status, test status, approvals, changed files, commit state, risk notes, and pending blockers.
 
+## Policy Profiles
+
+DeliveryOps supports policy profiles for different risk environments:
+
+```bash
+deliveryops set-policy-profile --repo . --profile personal_repo
+deliveryops policy-status --repo .
+deliveryops policy-status --repo . --action git_push
+```
+
+Available profiles:
+
+- `sandbox`: local experimentation and smoke testing
+- `personal_repo`: default MVP behavior for personal repositories
+- `production_repo`: stricter readiness and testing requirements before push or draft PR actions
+
 ## Smoke Test
 
 Run a local end-to-end smoke test without touching the real GitHub repository:

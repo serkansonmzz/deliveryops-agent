@@ -54,6 +54,11 @@ from app.tools.release_judge_tools import (
     evaluate_release_readiness,
     apply_readiness_result_to_state,
 )
+from app.tools.policy_profile_tools import (
+    validate_policy_profile,
+    ensure_policy_allows_action,
+    evaluate_policy_action,
+)
 
 
 app = typer.Typer(help="DeliveryOps Agent CLI")
@@ -263,6 +268,8 @@ def apply_patch(
     repo_path = resolve_repo_path(repo)
     state = load_state(repo_path)
 
+    ensure_policy_allows_action(state, "apply_patch")
+
     if not has_approved_action(repo_path, state.request_id, "apply_patch"):
         console.print(
             "[red]Cannot apply patch.[/red] "
@@ -369,6 +376,8 @@ def commit_command(
     repo_path = resolve_repo_path(repo)
     state = load_state(repo_path)
 
+    ensure_policy_allows_action(state, "git_commit")
+
     if not has_approved_action(repo_path, state.request_id, "git_commit"):
         console.print(
             "[red]Cannot commit changes.[/red] "
@@ -426,6 +435,8 @@ def push_command(
     repo_path = resolve_repo_path(repo)
     state = load_state(repo_path)
 
+    ensure_policy_allows_action(state, "git_push")
+
     if not has_approved_action(repo_path, state.request_id, "git_push"):
         console.print(
             "[red]Cannot push branch.[/red] "
@@ -461,6 +472,8 @@ def open_draft_pr_command(
 ):
     repo_path = resolve_repo_path(repo)
     state = load_state(repo_path)
+
+    ensure_policy_allows_action(state, "create_draft_pull_request")
 
     if not has_approved_action(repo_path, state.request_id, "create_draft_pull_request"):
         console.print(
@@ -507,6 +520,8 @@ def comment_progress_command(
 ):
     repo_path = resolve_repo_path(repo)
     state = load_state(repo_path)
+
+    ensure_policy_allows_action(state, "comment_progress")
 
     comment_output = post_progress_comment(repo_path, state)
 
@@ -737,6 +752,58 @@ def readiness_check_command(
 
     if result.status == "blocked":
         raise typer.Exit(code=1)
+
+
+@app.command("set-policy-profile")
+def set_policy_profile_command(
+    repo: str = typer.Option(".", help="Path to the local repository."),
+    profile: str = typer.Option(..., help="Policy profile: sandbox, personal_repo, production_repo."),
+):
+    repo_path = resolve_repo_path(repo)
+    state = load_state(repo_path)
+
+    selected_profile = validate_policy_profile(profile)
+
+    state.policy_profile = selected_profile
+    state.mark_completed("set_policy_profile")
+
+    save_state(state)
+    update_delivery_markdown(state)
+
+    console.print("[green]Policy profile updated.[/green]")
+    console.print(f"Profile: {selected_profile}")
+
+
+@app.command("policy-status")
+def policy_status_command(
+    repo: str = typer.Option(".", help="Path to the local repository."),
+    action: str | None = typer.Option(None, help="Optional action to evaluate."),
+):
+    repo_path = resolve_repo_path(repo)
+    state = load_state(repo_path)
+
+    console.print("[bold]DeliveryOps Policy Status[/bold]")
+    console.print(f"Active Profile: {state.policy_profile}")
+
+    if action:
+        decision = evaluate_policy_action(state, action)
+
+        console.print("")
+        console.print(f"Action: {decision.action}")
+        console.print(f"Permission: {decision.permission}")
+        console.print(f"Reason: {decision.reason}")
+
+        if decision.blockers:
+            console.print("")
+            console.print("[red]Blockers[/red]")
+            for blocker in decision.blockers:
+                console.print(f"- {blocker}")
+
+        if decision.warnings:
+            console.print("")
+            console.print("[yellow]Warnings[/yellow]")
+            for warning in decision.warnings:
+                console.print(f"- {warning}")
 
 
 @app.command()

@@ -23,6 +23,10 @@ class DeliveryState(BaseModel):
     pending_action: str | None = None
     pending_approval: bool = False
 
+    policy_profile: str = "personal_repo"
+    last_policy_decision: str | None = None
+    policy_warnings: list[str] = Field(default_factory=list)
+
     test_status: str | None = None
     test_command: str | None = None
     test_exit_code: int | None = None

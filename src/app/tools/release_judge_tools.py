@@ -128,6 +128,21 @@ def evaluate_release_readiness(repo_path: Path, state: DeliveryState) -> Release
     if state.security_notes:
         warnings.append("Security notes exist and should be reviewed.")
 
+    if state.policy_profile == "production_repo":
+        if state.test_status != "passed":
+            blockers.append("Production policy requires passing tests.")
+
+        if not state.github_issue_url:
+            blockers.append("Production policy requires a GitHub issue.")
+
+        if state.pending_approval and state.pending_action:
+            blockers.append(
+                f"Production policy cannot proceed while approval is pending: {state.pending_action}."
+            )
+
+    elif state.policy_profile == "sandbox":
+        warnings.append("Sandbox policy profile is active. Do not treat this as production evidence.")
+
     status = determine_readiness_status(blockers, warnings)
     risk_level = calculate_risk_level(blockers, warnings)
 
