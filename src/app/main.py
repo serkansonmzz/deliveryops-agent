@@ -50,6 +50,10 @@ from app.tools.patch_proposal_tools import build_patch_proposal
 from app.tools.issue_body_tools import build_issue_spec
 from app.tools.markdown_tracking_tools import update_delivery_markdown
 from app.tools.test_tools import detect_test_command, run_safe_test_command
+from app.tools.release_judge_tools import (
+    evaluate_release_readiness,
+    apply_readiness_result_to_state,
+)
 
 
 app = typer.Typer(help="DeliveryOps Agent CLI")
@@ -692,6 +696,46 @@ def run_tests_command(
     console.print(f"Exit Code: {result.exit_code}")
 
     if result.status != "passed":
+        raise typer.Exit(code=1)
+
+
+@app.command("readiness-check")
+def readiness_check_command(
+    repo: str = typer.Option(".", help="Path to the local repository."),
+):
+    repo_path = resolve_repo_path(repo)
+    state = load_state(repo_path)
+
+    result = evaluate_release_readiness(repo_path, state)
+    apply_readiness_result_to_state(state, result)
+
+    save_state(state)
+    update_delivery_markdown(state)
+
+    console.print("[bold]Release Readiness Check[/bold]")
+    console.print(f"Status: {result.status}")
+    console.print(f"Risk Level: {result.risk_level}")
+    console.print(result.summary)
+
+    if result.blockers:
+        console.print("")
+        console.print("[red]Blockers[/red]")
+        for blocker in result.blockers:
+            console.print(f"- {blocker}")
+
+    if result.warnings:
+        console.print("")
+        console.print("[yellow]Warnings[/yellow]")
+        for warning in result.warnings:
+            console.print(f"- {warning}")
+
+    if result.next_actions:
+        console.print("")
+        console.print("[bold]Next Actions[/bold]")
+        for action in result.next_actions:
+            console.print(f"- {action}")
+
+    if result.status == "blocked":
         raise typer.Exit(code=1)
 
 

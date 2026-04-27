@@ -65,6 +65,18 @@ deliveryops run-tests --repo .
 ```
 
 DeliveryOps only runs allowlisted test commands such as `uv run pytest -q`, `python -m pytest -q`, `pytest -q`, or package manager test commands.
+```
+
+## Release Readiness Check
+
+Run a deterministic release readiness check before commit, push, or PR steps:
+
+```bash
+deliveryops readiness-check --repo .
+```
+
+The check reviews patch status, test status, approvals, changed files, commit state, risk notes, and pending blockers.
+
 ## Smoke Test
 
 Run a local end-to-end smoke test without touching the real GitHub repository:

@@ -9,13 +9,18 @@ from app.tools.markdown_tracking_tools import update_delivery_markdown
 from app.tools.test_tools import detect_test_command, run_safe_test_command
 from app.tools.workflow_resume_tools import determine_next_workflow_step
 from app.tools.test_failure_analysis_tools import analyze_test_failure
+from app.tools.release_judge_tools import (
+    evaluate_release_readiness,
+    apply_readiness_result_to_state,
+)
 
 SAFE_AUTO_ACTIONS = {
     "detect_tests",
     "run_tests",
+    "analyze_test_failure",
+    "readiness_check",
     "generate_commit_message",
     "final_report",
-    "analyze_test_failure",
 }
 
 
@@ -56,6 +61,14 @@ def execute_safe_action(repo_path: Path, state: DeliveryState, action: str) -> N
         state.test_summary = result.summary
 
         state.mark_completed("run_tests")
+
+        save_state(state)
+        update_delivery_markdown(state)
+        return
+
+    if action == "readiness_check":
+        result = evaluate_release_readiness(repo_path, state)
+        apply_readiness_result_to_state(state, result)
 
         save_state(state)
         update_delivery_markdown(state)

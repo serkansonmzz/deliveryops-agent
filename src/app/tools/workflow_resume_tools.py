@@ -139,6 +139,28 @@ def determine_next_workflow_step(repo_path: Path, state: DeliveryState) -> Conti
             notes=["Check DELIVERY.md for likely causes and recommended next actions."],
         )
 
+    if state.test_status == "passed" and not has_step(state, "release_readiness_check"):
+        return ContinueDecision(
+            status="ready",
+            next_action="readiness_check",
+            next_command=build_deliveryops_command("readiness-check"),
+            reason="Tests passed. Run release readiness check before generating the commit message.",
+            safe_to_run=True,
+        )
+
+    if (
+        has_step(state, "detect_tests")
+        and state.test_status == "not_detected"
+        and not has_step(state, "release_readiness_check")
+    ):
+        return ContinueDecision(
+            status="ready",
+            next_action="readiness_check",
+            next_command=build_deliveryops_command("readiness-check"),
+            reason="No test command was detected. Run release readiness check before generating the commit message.",
+            safe_to_run=True,
+        )
+
     if not has_step(state, "generate_commit_message"):
         return ContinueDecision(
             status="ready",
