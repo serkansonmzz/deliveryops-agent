@@ -8,13 +8,14 @@ from app.tools.delivery_report_tools import build_final_report, write_final_repo
 from app.tools.markdown_tracking_tools import update_delivery_markdown
 from app.tools.test_tools import detect_test_command, run_safe_test_command
 from app.tools.workflow_resume_tools import determine_next_workflow_step
-
+from app.tools.test_failure_analysis_tools import analyze_test_failure
 
 SAFE_AUTO_ACTIONS = {
     "detect_tests",
     "run_tests",
     "generate_commit_message",
     "final_report",
+    "analyze_test_failure",
 }
 
 
@@ -98,6 +99,26 @@ def execute_safe_action(repo_path: Path, state: DeliveryState, action: str) -> N
         update_delivery_markdown(state)
         return
 
+    if action == "analyze_test_failure":
+        if state.test_status != "failed":
+            state.last_error = "No failed test run found to analyze."
+            save_state(state)
+            update_delivery_markdown(state)
+            return
+
+        analysis = analyze_test_failure(state)
+
+        state.test_failure_category = analysis.category
+        state.test_failure_analysis_summary = analysis.summary
+        state.test_failure_likely_causes = analysis.likely_causes
+        state.test_failure_next_actions = analysis.next_actions
+        state.test_failure_risk_level = analysis.risk_level
+
+        state.mark_completed("analyze_test_failure")
+
+        save_state(state)
+        update_delivery_markdown(state)
+        return
     raise RuntimeError(f"Unsupported safe auto action: {action}")
 
 

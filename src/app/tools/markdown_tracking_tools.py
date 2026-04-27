@@ -203,6 +203,32 @@ def render_delivery_markdown(state: DeliveryState) -> str:
     lines.append(state.test_summary or "pending")
     lines.append("")
 
+    lines.append("## Test Failure Analysis")
+    lines.append("")
+    lines.append(f"- Category: `{state.test_failure_category or 'pending'}`")
+    lines.append(f"- Risk Level: `{state.test_failure_risk_level or 'pending'}`")
+    lines.append("")
+    lines.append("### Failure Summary")
+    lines.append("")
+    lines.append(state.test_failure_analysis_summary or "pending")
+    lines.append("")
+    lines.append("### Likely Causes")
+    lines.append("")
+    if state.test_failure_likely_causes:
+        for cause in state.test_failure_likely_causes:
+            lines.append(f"- {cause}")
+    else:
+        lines.append("- pending")
+    lines.append("")
+    lines.append("### Recommended Next Actions")
+    lines.append("")
+    if state.test_failure_next_actions:
+        for action in state.test_failure_next_actions:
+            lines.append(f"- {action}")
+    else:
+        lines.append("- pending")
+    lines.append("")
+
     lines.append("## Changed Files")
     lines.append("")
 

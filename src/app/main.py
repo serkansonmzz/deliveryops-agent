@@ -37,6 +37,7 @@ from app.tools.pull_request_tools import (
     build_pull_request_body,
     build_pull_request_title,
 )
+from app.tools.test_failure_analysis_tools import analyze_test_failure
 from app.tools.smoke_test_tools import run_local_smoke_test
 from app.tools.push_tools import push_current_branch
 from app.tools.commit_message_tools import build_commit_message_spec
@@ -291,6 +292,35 @@ def apply_patch(
     update_delivery_markdown(state)
 
     console.print("[green]Apply patch workflow completed.[/green]")
+
+
+@app.command("analyze-test-failure")
+def analyze_test_failure_command(
+    repo: str = typer.Option(".", help="Path to the local repository."),
+):
+    repo_path = resolve_repo_path(repo)
+    state = load_state(repo_path)
+
+    if state.test_status != "failed":
+        console.print("[yellow]No failed test run found.[/yellow]")
+        raise typer.Exit(code=0)
+
+    analysis = analyze_test_failure(state)
+
+    state.test_failure_category = analysis.category
+    state.test_failure_analysis_summary = analysis.summary
+    state.test_failure_likely_causes = analysis.likely_causes
+    state.test_failure_next_actions = analysis.next_actions
+    state.test_failure_risk_level = analysis.risk_level
+
+    state.mark_completed("analyze_test_failure")
+
+    save_state(state)
+    update_delivery_markdown(state)
+
+    console.print("[green]Test failure analyzed.[/green]")
+    console.print(f"Category: {analysis.category}")
+    console.print(f"Risk Level: {analysis.risk_level}")
 
 @app.command("generate-commit-message")
 def generate_commit_message_command(
