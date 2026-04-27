@@ -33,6 +33,14 @@ class DeliveryState(BaseModel):
     test_failure_likely_causes: list[str] = Field(default_factory=list)
     test_failure_next_actions: list[str] = Field(default_factory=list)
     test_failure_risk_level: str | None = None
+
+    readiness_status: str | None = None
+    readiness_risk_level: str | None = None
+    readiness_summary: str | None = None
+    readiness_blockers: list[str] = Field(default_factory=list)
+    readiness_warnings: list[str] = Field(default_factory=list)
+    readiness_next_actions: list[str] = Field(default_factory=list)
+
     changed_files: list[str] = Field(default_factory=list)
 
     architecture_review_summary: str | None = None

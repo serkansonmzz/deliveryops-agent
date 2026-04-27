@@ -229,6 +229,43 @@ def render_delivery_markdown(state: DeliveryState) -> str:
         lines.append("- pending")
     lines.append("")
 
+    lines.append("## Release Readiness")
+    lines.append("")
+    lines.append(f"- Status: `{state.readiness_status or 'pending'}`")
+    lines.append(f"- Risk Level: `{state.readiness_risk_level or 'pending'}`")
+    lines.append("")
+    lines.append("### Readiness Summary")
+    lines.append("")
+    lines.append(state.readiness_summary or "pending")
+    lines.append("")
+
+    lines.append("### Blockers")
+    lines.append("")
+    if state.readiness_blockers:
+        for blocker in state.readiness_blockers:
+            lines.append(f"- {blocker}")
+    else:
+        lines.append("- pending")
+    lines.append("")
+
+    lines.append("### Warnings")
+    lines.append("")
+    if state.readiness_warnings:
+        for warning in state.readiness_warnings:
+            lines.append(f"- {warning}")
+    else:
+        lines.append("- pending")
+    lines.append("")
+
+    lines.append("### Readiness Next Actions")
+    lines.append("")
+    if state.readiness_next_actions:
+        for action in state.readiness_next_actions:
+            lines.append(f"- {action}")
+    else:
+        lines.append("- pending")
+    lines.append("")
+
     lines.append("## Changed Files")
     lines.append("")
 

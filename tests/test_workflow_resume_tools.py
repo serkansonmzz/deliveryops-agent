@@ -85,6 +85,24 @@ def test_continue_detects_tests_after_patch_applied(tmp_path: Path):
     assert "detect-tests" in decision.next_command
 
 
+def test_continue_runs_readiness_check_after_tests_passed(tmp_path: Path):
+    state = DeliveryState(
+        request_id="req_test",
+        repo_path=str(tmp_path),
+        original_request="Update README documentation",
+        test_status="passed",
+    )
+    state.mark_completed("apply_patch")
+    state.mark_completed("detect_tests")
+    state.mark_completed("run_tests")
+
+    decision = determine_next_workflow_step(tmp_path, state)
+
+    assert decision.status == "ready"
+    assert decision.next_action == "readiness_check"
+    assert "readiness-check" in decision.next_command
+
+
 def test_continue_generates_commit_message_after_tests(tmp_path: Path):
     state = DeliveryState(
         request_id="req_test",
@@ -94,6 +112,7 @@ def test_continue_generates_commit_message_after_tests(tmp_path: Path):
     state.mark_completed("apply_patch")
     state.mark_completed("detect_tests")
     state.test_status = "not_detected"
+    state.mark_completed("release_readiness_check")
 
     decision = determine_next_workflow_step(tmp_path, state)
 
@@ -110,6 +129,7 @@ def test_continue_requires_git_commit_approval(tmp_path: Path):
     )
     state.mark_completed("apply_patch")
     state.mark_completed("detect_tests")
+    state.mark_completed("release_readiness_check")
     state.mark_completed("generate_commit_message")
 
     decision = determine_next_workflow_step(tmp_path, state)
@@ -127,6 +147,7 @@ def test_continue_runs_commit_after_approval(tmp_path: Path):
     )
     state.mark_completed("apply_patch")
     state.mark_completed("detect_tests")
+    state.mark_completed("release_readiness_check")
     state.mark_completed("generate_commit_message")
 
     approve(tmp_path, state, "git_commit")
@@ -148,6 +169,7 @@ def test_continue_completed_workflow(tmp_path: Path):
     for step in [
         "apply_patch",
         "detect_tests",
+        "release_readiness_check",
         "generate_commit_message",
         "commit_changes",
         "push_branch",
