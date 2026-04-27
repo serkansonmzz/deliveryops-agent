@@ -87,3 +87,10 @@ deliveryops continue --repo .
 deliveryops auto-continue --repo .
 
 ```
+## Test Failure Analysis
+
+Analyze a failed test run and get likely causes plus recommended next actions:
+
+```bash
+deliveryops analyze-test-failure --repo .
+```

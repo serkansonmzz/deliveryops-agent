@@ -28,6 +28,11 @@ class DeliveryState(BaseModel):
     test_exit_code: int | None = None
     test_output: str | None = None
     test_summary: str | None = None
+    test_failure_category: str | None = None
+    test_failure_analysis_summary: str | None = None
+    test_failure_likely_causes: list[str] = Field(default_factory=list)
+    test_failure_next_actions: list[str] = Field(default_factory=list)
+    test_failure_risk_level: str | None = None
     changed_files: list[str] = Field(default_factory=list)
 
     architecture_review_summary: str | None = None
