@@ -12,3 +12,9 @@ class ApprovalRecord(BaseModel):
     decision: str
     reason: str | None = None
     timestamp: str = Field(default_factory=utc_now_iso)
+    risk_level: str | None = None
+    affected_files: list[str] = Field(default_factory=list)
+    command: str | None = None
+    expected_result: str | None = None
+    rollback_note: str | None = None
+    policy_profile: str | None = None

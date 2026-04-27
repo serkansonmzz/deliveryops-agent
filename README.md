@@ -93,6 +93,24 @@ Available profiles:
 - `personal_repo`: default MVP behavior for personal repositories
 - `production_repo`: stricter readiness and testing requirements before push or draft PR actions
 
+## Approval Request Details
+
+Inspect the current pending approval request:
+
+```bash
+deliveryops approval-status --repo .
+```
+
+Approval requests include:
+
+- action name
+- risk level
+- affected files
+- exact command
+- expected result
+- rollback note
+- active policy profile
+
 ## Smoke Test
 
 Run a local end-to-end smoke test without touching the real GitHub repository:

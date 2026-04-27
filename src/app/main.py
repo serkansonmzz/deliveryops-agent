@@ -59,6 +59,10 @@ from app.tools.policy_profile_tools import (
     ensure_policy_allows_action,
     evaluate_policy_action,
 )
+from app.tools.approval_request_tools import (
+    build_approval_request,
+    apply_approval_request_to_state,
+)
 
 
 app = typer.Typer(help="DeliveryOps Agent CLI")
@@ -132,6 +136,12 @@ def approve(
         action=action,
         decision="approved",
         reason=reason,
+        risk_level=state.approval_request_risk_level,
+        affected_files=state.approval_request_affected_files,
+        command=state.approval_request_command,
+        expected_result=state.approval_request_expected_result,
+        rollback_note=state.approval_request_rollback_note,
+        policy_profile=state.policy_profile,
     )
 
     append_approval_record(repo_path, record)
@@ -172,6 +182,12 @@ def reject(
         action=action,
         decision="rejected",
         reason=reason,
+        risk_level=state.approval_request_risk_level,
+        affected_files=state.approval_request_affected_files,
+        command=state.approval_request_command,
+        expected_result=state.approval_request_expected_result,
+        rollback_note=state.approval_request_rollback_note,
+        policy_profile=state.policy_profile,
     )
 
     append_approval_record(repo_path, record)
@@ -356,8 +372,8 @@ def generate_commit_message_command(
     state.commit_rationale = commit_spec.rationale
     state.changed_files = commit_spec.changed_files
 
-    state.pending_action = "git_commit"
-    state.pending_approval = True
+    approval_request = build_approval_request(repo_path, state, "git_commit")
+    apply_approval_request_to_state(state, approval_request)
 
     state.mark_completed("generate_commit_message")
     state.mark_completed("request_commit_approval")
@@ -413,8 +429,8 @@ def commit_command(
     state.committed_files = result.committed_files
     state.changed_files = result.committed_files
 
-    state.pending_action = "git_push"
-    state.pending_approval = True
+    approval_request = build_approval_request(repo_path, state, "git_push")
+    apply_approval_request_to_state(state, approval_request)
 
     state.mark_completed("commit_changes")
     state.mark_completed("request_push_approval")
@@ -451,8 +467,8 @@ def push_command(
     state.push_status = "pushed"
     state.push_output = result.stdout or result.stderr or "Push completed."
 
-    state.pending_action = "create_draft_pull_request"
-    state.pending_approval = True
+    approval_request = build_approval_request(repo_path, state, "create_draft_pull_request")
+    apply_approval_request_to_state(state, approval_request)
 
     state.mark_completed("push_branch")
     state.mark_completed("request_pr_approval")
@@ -806,6 +822,52 @@ def policy_status_command(
                 console.print(f"- {warning}")
 
 
+@app.command("approval-status")
+def approval_status_command(
+    repo: str = typer.Option(".", help="Path to the local repository."),
+):
+    repo_path = resolve_repo_path(repo)
+    state = load_state(repo_path)
+
+    if not state.pending_approval and not state.pending_action:
+        console.print("[green]No pending approval.[/green]")
+        raise typer.Exit(code=0)
+
+    action = state.pending_action or state.approval_request_action
+
+    if action and not state.approval_request_action:
+        request = build_approval_request(repo_path, state, action)
+        apply_approval_request_to_state(state, request)
+        save_state(state)
+        update_delivery_markdown(state)
+
+    console.print("[bold]Pending Approval Request[/bold]")
+    console.print(f"Action: {state.approval_request_action or state.pending_action}")
+    console.print(f"Risk Level: {state.approval_request_risk_level or 'pending'}")
+    console.print(f"Reason: {state.approval_request_reason or 'pending'}")
+
+    if state.approval_request_command:
+        console.print("")
+        console.print("[bold]Command[/bold]")
+        console.print(state.approval_request_command)
+
+    if state.approval_request_affected_files:
+        console.print("")
+        console.print("[bold]Affected Files[/bold]")
+        for file_path in state.approval_request_affected_files:
+            console.print(f"- {file_path}")
+
+    if state.approval_request_expected_result:
+        console.print("")
+        console.print("[bold]Expected Result[/bold]")
+        console.print(state.approval_request_expected_result)
+
+    if state.approval_request_rollback_note:
+        console.print("")
+        console.print("[bold]Rollback Note[/bold]")
+        console.print(state.approval_request_rollback_note)
+
+
 @app.command()
 def inspect(repo: str = typer.Option(".", help="Path to the local repository.")):
     repo_path = resolve_repo_path(repo)
@@ -923,8 +985,8 @@ def run(
         state.proposed_changes = patch_proposal.proposed_changes
         state.patch_risk_level = patch_proposal.risk_level
 
-        state.pending_action = "apply_patch"
-        state.pending_approval = True
+        approval_request = build_approval_request(repo_path, state, "apply_patch")
+        apply_approval_request_to_state(state, approval_request)
 
         state.mark_completed("prepare_patch")
         state.mark_completed("request_patch_approval")

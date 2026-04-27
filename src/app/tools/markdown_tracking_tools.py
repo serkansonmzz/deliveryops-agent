@@ -62,6 +62,36 @@ def render_delivery_markdown(state: DeliveryState) -> str:
         lines.append("- pending")
     lines.append("")
 
+    lines.append("## Pending Approval Request")
+    lines.append("")
+    lines.append(f"- Action: `{state.approval_request_action or state.pending_action or 'pending'}`")
+    lines.append(f"- Risk Level: `{state.approval_request_risk_level or 'pending'}`")
+    lines.append("")
+    lines.append("### Reason")
+    lines.append("")
+    lines.append(state.approval_request_reason or "pending")
+    lines.append("")
+    lines.append("### Affected Files")
+    lines.append("")
+    if state.approval_request_affected_files:
+        for file_path in state.approval_request_affected_files:
+            lines.append(f"- `{file_path}`")
+    else:
+        lines.append("- pending")
+    lines.append("")
+    lines.append("### Command")
+    lines.append("")
+    lines.append(f"`{state.approval_request_command or 'pending'}`")
+    lines.append("")
+    lines.append("### Expected Result")
+    lines.append("")
+    lines.append(state.approval_request_expected_result or "pending")
+    lines.append("")
+    lines.append("### Rollback Note")
+    lines.append("")
+    lines.append(state.approval_request_rollback_note or "pending")
+    lines.append("")
+
     lines.append("## Checklist")
     lines.append("")
 
