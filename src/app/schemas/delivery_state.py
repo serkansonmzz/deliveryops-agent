@@ -23,6 +23,14 @@ class DeliveryState(BaseModel):
     pending_action: str | None = None
     pending_approval: bool = False
 
+    approval_request_action: str | None = None
+    approval_request_reason: str | None = None
+    approval_request_risk_level: str | None = None
+    approval_request_affected_files: list[str] = Field(default_factory=list)
+    approval_request_command: str | None = None
+    approval_request_expected_result: str | None = None
+    approval_request_rollback_note: str | None = None
+
     policy_profile: str = "personal_repo"
     last_policy_decision: str | None = None
     policy_warnings: list[str] = Field(default_factory=list)
