@@ -50,6 +50,13 @@ class DeliveryState(BaseModel):
     test_failure_next_actions: list[str] = Field(default_factory=list)
     test_failure_risk_level: str | None = None
 
+    fix_patch_attempt_count: int = 0
+    fix_patch_max_attempts: int = 3
+    fix_patch_status: str | None = None
+    fix_patch_summary: str | None = None
+    fix_patch_target_files: list[str] = Field(default_factory=list)
+    fix_patch_last_error: str | None = None
+
     readiness_status: str | None = None
     readiness_risk_level: str | None = None
     readiness_summary: str | None = None

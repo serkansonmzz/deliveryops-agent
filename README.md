@@ -146,6 +146,16 @@ deliveryops check-ci --repo .
 
 This command reads GitHub PR check status with GitHub CLI and updates `.deliveryops/state.json` plus `.deliveryops/DELIVERY.md`.
 
+## Controlled Fix Patch Loop
+
+Generate a controlled fix patch after failed tests or CI checks:
+
+```bash
+deliveryops generate-fix-patch --repo .
+```
+
+The command uses failure analysis to ask the Dev Agent for a minimal fix patch. The patch is still sanitized, validated, and requires `apply_patch` approval before being applied.
+
 ## Smoke Test
 
 Run a local end-to-end smoke test without touching the real GitHub repository:

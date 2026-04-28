@@ -71,6 +71,7 @@ from app.tools.ci_tools import (
     check_pull_request_ci_status,
     apply_ci_status_to_state,
 )
+from app.tools.fix_patch_loop_tools import generate_controlled_fix_patch
 
 
 app = typer.Typer(help="DeliveryOps Agent CLI")
@@ -1119,6 +1120,36 @@ def check_ci_command(
         console.print("[yellow]Pending Checks[/yellow]")
         for check in state.ci_pending_checks:
             console.print(f"- {check}")
+
+
+@app.command("generate-fix-patch")
+def generate_fix_patch_command(
+    repo: str = typer.Option(".", help="Path to the local repository."),
+):
+    repo_path = resolve_repo_path(repo)
+    state = load_state(repo_path)
+
+    attempt = generate_controlled_fix_patch(repo_path, state)
+
+    if attempt.status == "generated":
+        state.mark_completed("generate_fix_patch")
+
+    save_state(state)
+    update_delivery_markdown(state)
+
+    if attempt.status == "generated":
+        console.print("[green]Controlled fix patch generated.[/green]")
+        console.print(f"Patch: {attempt.generated_patch_path}")
+        console.print("[yellow]Waiting for approval:[/yellow] apply_patch")
+        return
+
+    console.print("[yellow]Fix patch was not generated successfully.[/yellow]")
+    console.print(f"Status: {attempt.status}")
+
+    if attempt.error:
+        console.print(f"Error: {attempt.error}")
+
+    raise typer.Exit(code=1)
 
 
 if __name__ == "__main__":

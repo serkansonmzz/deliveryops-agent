@@ -319,6 +319,29 @@ def render_delivery_markdown(state: DeliveryState) -> str:
         lines.append("- pending")
     lines.append("")
 
+    lines.append("## Controlled Fix Patch Loop")
+    lines.append("")
+    lines.append(f"- Attempt Count: `{state.fix_patch_attempt_count}`")
+    lines.append(f"- Max Attempts: `{state.fix_patch_max_attempts}`")
+    lines.append(f"- Status: `{state.fix_patch_status or 'pending'}`")
+    lines.append("")
+    lines.append("### Fix Patch Summary")
+    lines.append("")
+    lines.append(state.fix_patch_summary or "pending")
+    lines.append("")
+    lines.append("### Fix Patch Target Files")
+    lines.append("")
+    if state.fix_patch_target_files:
+        for file_path in state.fix_patch_target_files:
+            lines.append(f"- `{file_path}`")
+    else:
+        lines.append("- pending")
+    lines.append("")
+    lines.append("### Fix Patch Last Error")
+    lines.append("")
+    lines.append(state.fix_patch_last_error or "pending")
+    lines.append("")
+
     lines.append("## Release Readiness")
     lines.append("")
     lines.append(f"- Status: `{state.readiness_status or 'pending'}`")
