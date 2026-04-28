@@ -1,22 +1,37 @@
 # DeliveryOps Agent
 
-Agno-powered autonomous software delivery manager.
+An Agno-powered autonomous software delivery manager.
 
-## Goal
+DeliveryOps Agent is a CLI-first, approval-gated delivery workflow for existing GitHub repositories.
 
-DeliveryOps Agent turns a feature request into a GitHub-based delivery workflow:
+It can help turn a feature request into a structured delivery flow:
 
-Feature request → GitHub Issue → Branch → Architecture review → Implementation plan → Patch → Tests → Commit approval → Push approval → Draft PR.
+```text
+request
+→ GitHub issue
+→ feature branch
+→ architecture review
+→ implementation plan
+→ patch
+→ approval
+→ apply
+→ tests
+→ readiness check
+→ commit
+→ push
+→ draft PR
+→ final report
+```
 
 ## MVP Status
 
-Current phase:
+DeliveryOps Agent is currently an MVP release candidate.
 
-- Local CLI
-- Local state storage
-- Human-readable `.deliveryops/DELIVERY.md`
-- Basic Git inspection tools
-- Tool permission policy
+See:
+
+- `docs/MVP_RELEASE_CANDIDATE.md`
+- `docs/WORKFLOW_OVERVIEW.md`
+- `docs/KNOWN_LIMITATIONS.md`
 
 ## Setup
 

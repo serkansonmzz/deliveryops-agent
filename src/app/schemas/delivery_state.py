@@ -112,6 +112,10 @@ class DeliveryState(BaseModel):
     final_report_path: str | None = None
     final_report_status: str | None = None
 
+    mvp_release_status: str | None = None
+    mvp_release_notes_path: str | None = None
+    mvp_release_checklist: list[str] = Field(default_factory=list)
+
     created_at: str = Field(default_factory=utc_now_iso)
     updated_at: str = Field(default_factory=utc_now_iso)
 

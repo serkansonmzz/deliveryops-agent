@@ -72,6 +72,10 @@ from app.tools.ci_tools import (
     apply_ci_status_to_state,
 )
 from app.tools.fix_patch_loop_tools import generate_controlled_fix_patch
+from app.tools.release_candidate_tools import (
+    write_mvp_release_notes,
+    apply_mvp_release_candidate_state,
+)
 
 
 app = typer.Typer(help="DeliveryOps Agent CLI")
@@ -1150,6 +1154,23 @@ def generate_fix_patch_command(
         console.print(f"Error: {attempt.error}")
 
     raise typer.Exit(code=1)
+
+
+@app.command("mvp-release-notes")
+def mvp_release_notes_command(
+    repo: str = typer.Option(".", help="Path to the local repository."),
+):
+    repo_path = resolve_repo_path(repo)
+    state = load_state(repo_path)
+
+    notes_path = write_mvp_release_notes(repo_path, state)
+    apply_mvp_release_candidate_state(state, notes_path, repo_path)
+
+    save_state(state)
+    update_delivery_markdown(state)
+
+    console.print("[green]MVP release notes generated.[/green]")
+    console.print(f"Release notes: {state.mvp_release_notes_path}")
 
 
 if __name__ == "__main__":
