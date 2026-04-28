@@ -14,6 +14,10 @@ from app.tools.release_judge_tools import (
     evaluate_release_readiness,
     apply_readiness_result_to_state,
 )
+from app.tools.ci_tools import (
+    check_pull_request_ci_status,
+    apply_ci_status_to_state,
+)
 
 SAFE_AUTO_ACTIONS = {
     "detect_tests",
@@ -21,6 +25,7 @@ SAFE_AUTO_ACTIONS = {
     "analyze_test_failure",
     "readiness_check",
     "generate_commit_message",
+    "check_ci",
     "final_report",
 }
 
@@ -96,6 +101,13 @@ def execute_safe_action(repo_path: Path, state: DeliveryState, action: str) -> N
         state.mark_completed("generate_commit_message")
         state.mark_completed("request_commit_approval")
 
+        save_state(state)
+        update_delivery_markdown(state)
+        return
+
+    if action == "check_ci":
+        result = check_pull_request_ci_status(repo_path, state)
+        apply_ci_status_to_state(state, result)
         save_state(state)
         update_delivery_markdown(state)
         return

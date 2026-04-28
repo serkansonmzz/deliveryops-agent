@@ -227,6 +227,25 @@ def determine_next_workflow_step(repo_path: Path, state: DeliveryState) -> Conti
             safe_to_run=False,
         )
 
+    if has_step(state, "open_draft_pr") and not has_step(state, "check_ci_status"):
+        return ContinueDecision(
+            status="ready",
+            next_action="check_ci",
+            next_command=build_deliveryops_command("check-ci"),
+            reason="Draft PR exists. Check GitHub CI status before posting progress or finalizing.",
+            safe_to_run=True,
+        )
+
+    if state.ci_status == "failed":
+        return ContinueDecision(
+            status="blocked",
+            next_action=None,
+            next_command=None,
+            reason="GitHub CI checks are failing. Inspect CI output before continuing.",
+            safe_to_run=False,
+            notes=["Run `uv run deliveryops check-ci --repo .` again after fixing the failure."],
+        )
+
     if not has_step(state, "comment_progress"):
         return ContinueDecision(
             status="ready",

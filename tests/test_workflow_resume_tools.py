@@ -174,6 +174,7 @@ def test_continue_completed_workflow(tmp_path: Path):
         "commit_changes",
         "push_branch",
         "open_draft_pr",
+        "check_ci_status",
         "comment_progress",
         "generate_final_report",
     ]:
@@ -183,3 +184,29 @@ def test_continue_completed_workflow(tmp_path: Path):
 
     assert decision.status == "completed"
     assert decision.next_action is None
+
+
+def test_continue_checks_ci_after_draft_pr_opened(tmp_path: Path):
+    state = DeliveryState(
+        request_id="req_test",
+        repo_path=str(tmp_path),
+        original_request="Update README documentation",
+    )
+
+    for step in [
+        "apply_patch",
+        "detect_tests",
+        "run_tests",
+        "release_readiness_check",
+        "generate_commit_message",
+        "commit_changes",
+        "push_branch",
+        "open_draft_pr",
+    ]:
+        state.mark_completed(step)
+
+    decision = determine_next_workflow_step(tmp_path, state)
+
+    assert decision.status == "ready"
+    assert decision.next_action == "check_ci"
+    assert "check-ci" in decision.next_command

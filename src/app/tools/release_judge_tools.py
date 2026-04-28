@@ -101,6 +101,13 @@ def evaluate_release_readiness(repo_path: Path, state: DeliveryState) -> Release
     if has_completed(state, "run_tests") and state.test_status != "passed":
         blockers.append("Test step completed without passing status.")
 
+    if state.ci_status == "failed":
+        blockers.append("GitHub CI checks are failing.")
+    elif state.ci_status == "pending":
+        warnings.append("GitHub CI checks are still pending.")
+    elif state.ci_status == "no_checks":
+        warnings.append("No GitHub CI checks were found.")
+
     if not state.commit_message and not state.commit_hash:
         warnings.append("Commit message has not been generated yet.")
 
@@ -139,6 +146,9 @@ def evaluate_release_readiness(repo_path: Path, state: DeliveryState) -> Release
             blockers.append(
                 f"Production policy cannot proceed while approval is pending: {state.pending_action}."
             )
+
+        if state.ci_status != "passed":
+            blockers.append("Production policy requires passing GitHub CI checks.")
 
     elif state.policy_profile == "sandbox":
         warnings.append("Sandbox policy profile is active. Do not treat this as production evidence.")
