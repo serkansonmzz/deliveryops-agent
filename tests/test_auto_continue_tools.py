@@ -70,6 +70,7 @@ def test_auto_continue_generates_final_report(tmp_path: Path):
         "commit_changes",
         "push_branch",
         "open_draft_pr",
+        "check_ci_status",
         "comment_progress",
     ]:
         state.mark_completed(step)

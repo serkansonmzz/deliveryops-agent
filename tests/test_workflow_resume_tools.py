@@ -174,6 +174,7 @@ def test_continue_completed_workflow(tmp_path: Path):
         "commit_changes",
         "push_branch",
         "open_draft_pr",
+        "check_ci_status",
         "comment_progress",
         "generate_final_report",
     ]:

@@ -214,6 +214,34 @@ def render_delivery_markdown(state: DeliveryState) -> str:
     lines.append(state.pr_body or "pending")
     lines.append("")
 
+    lines.append("## CI Status")
+    lines.append("")
+    lines.append(f"- Status: `{state.ci_status or 'pending'}`")
+    lines.append(f"- Check Count: `{state.ci_check_count}`")
+    lines.append("")
+    lines.append("### CI Summary")
+    lines.append("")
+    lines.append(state.ci_summary or "pending")
+    lines.append("")
+
+    lines.append("### Failed Checks")
+    lines.append("")
+    if state.ci_failed_checks:
+        for check in state.ci_failed_checks:
+            lines.append(f"- {check}")
+    else:
+        lines.append("- pending")
+    lines.append("")
+
+    lines.append("### Pending Checks")
+    lines.append("")
+    if state.ci_pending_checks:
+        for check in state.ci_pending_checks:
+            lines.append(f"- {check}")
+    else:
+        lines.append("- pending")
+    lines.append("")
+
     lines.append("## Issue Comment Status")
     lines.append("")
     lines.append(f"- Comment Count: `{state.issue_comment_count}`")

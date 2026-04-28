@@ -93,6 +93,13 @@ class DeliveryState(BaseModel):
     pr_head_branch: str | None = None
     pr_status: str | None = None
 
+    ci_status: str | None = None
+    ci_summary: str | None = None
+    ci_raw_output: str | None = None
+    ci_check_count: int = 0
+    ci_failed_checks: list[str] = Field(default_factory=list)
+    ci_pending_checks: list[str] = Field(default_factory=list)
+
     issue_comment_count: int = 0
     last_issue_comment_url: str | None = None
     final_report_path: str | None = None

@@ -67,6 +67,10 @@ from app.tools.agent_role_tools import (
     list_agent_roles,
     summarize_agent_role_status,
 )
+from app.tools.ci_tools import (
+    check_pull_request_ci_status,
+    apply_ci_status_to_state,
+)
 
 
 app = typer.Typer(help="DeliveryOps Agent CLI")
@@ -1083,6 +1087,38 @@ def agent_role_status_command(
         console.print("[bold]Notes[/bold]")
         for note in status.notes:
             console.print(f"- {note}")
+
+
+@app.command("check-ci")
+def check_ci_command(
+    repo: str = typer.Option(".", help="Path to the local repository."),
+):
+    repo_path = resolve_repo_path(repo)
+    state = load_state(repo_path)
+
+    result = check_pull_request_ci_status(repo_path, state)
+    apply_ci_status_to_state(state, result)
+
+    save_state(state)
+    update_delivery_markdown(state)
+
+    console.print("[bold]GitHub CI Status[/bold]")
+    console.print(f"Status: {result.status}")
+    console.print(result.summary)
+
+    if result.status == "failed":
+        console.print("")
+        console.print("[red]Failed Checks[/red]")
+        for check in state.ci_failed_checks:
+            console.print(f"- {check}")
+
+        raise typer.Exit(code=1)
+
+    if result.status == "pending":
+        console.print("")
+        console.print("[yellow]Pending Checks[/yellow]")
+        for check in state.ci_pending_checks:
+            console.print(f"- {check}")
 
 
 if __name__ == "__main__":
