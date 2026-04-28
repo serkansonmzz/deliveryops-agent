@@ -254,6 +254,20 @@ def render_delivery_markdown(state: DeliveryState) -> str:
     lines.append(f"- Status: `{state.final_report_status or 'pending'}`")
     lines.append("")
 
+    lines.append("## MVP Release Candidate")
+    lines.append("")
+    lines.append(f"- Status: `{state.mvp_release_status or 'pending'}`")
+    lines.append(f"- Release Notes: `{state.mvp_release_notes_path or 'pending'}`")
+    lines.append("")
+    lines.append("### MVP Release Checklist")
+    lines.append("")
+    if state.mvp_release_checklist:
+        for item in state.mvp_release_checklist:
+            lines.append(f"- [ ] {item}")
+    else:
+        lines.append("- pending")
+    lines.append("")
+
     lines.append("### Committed Files")
     lines.append("")
     if state.committed_files:
