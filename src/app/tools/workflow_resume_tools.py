@@ -130,13 +130,26 @@ def determine_next_workflow_step(repo_path: Path, state: DeliveryState) -> Conti
                 safe_to_run=True,
             )
 
+        if state.fix_patch_attempt_count < state.fix_patch_max_attempts:
+            return ContinueDecision(
+                status="ready",
+                next_action="generate_fix_patch",
+                next_command=build_deliveryops_command("generate-fix-patch"),
+                reason="Tests failed and failure analysis is available. Generate a controlled fix patch next.",
+                safe_to_run=False,
+                notes=[
+                    "This may call the Dev Agent and generate a patch.",
+                    "The generated fix patch will still require apply_patch approval.",
+                ],
+            )
+
         return ContinueDecision(
             status="blocked",
             next_action=None,
             next_command=None,
-            reason="Tests failed and failure analysis is available. Fix the issue before continuing to commit.",
+            reason="Tests failed and maximum fix patch attempts were reached.",
             safe_to_run=False,
-            notes=["Check DELIVERY.md for likely causes and recommended next actions."],
+            notes=["Manual intervention is required before continuing."],
         )
 
     if state.test_status == "passed" and not has_step(state, "release_readiness_check"):
@@ -237,13 +250,25 @@ def determine_next_workflow_step(repo_path: Path, state: DeliveryState) -> Conti
         )
 
     if state.ci_status == "failed":
+        if state.fix_patch_attempt_count < state.fix_patch_max_attempts:
+            return ContinueDecision(
+                status="ready",
+                next_action="generate_fix_patch",
+                next_command=build_deliveryops_command("generate-fix-patch"),
+                reason="CI checks failed. Generate a controlled fix patch next.",
+                safe_to_run=False,
+                notes=[
+                    "This may call the Dev Agent and generate a patch.",
+                    "The generated fix patch will still require apply_patch approval.",
+                ],
+            )
+
         return ContinueDecision(
             status="blocked",
             next_action=None,
             next_command=None,
-            reason="GitHub CI checks are failing. Inspect CI output before continuing.",
+            reason="CI failed and maximum fix patch attempts were reached.",
             safe_to_run=False,
-            notes=["Run `uv run deliveryops check-ci --repo .` again after fixing the failure."],
         )
 
     if not has_step(state, "comment_progress"):

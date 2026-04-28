@@ -210,3 +210,24 @@ def test_continue_checks_ci_after_draft_pr_opened(tmp_path: Path):
     assert decision.status == "ready"
     assert decision.next_action == "check_ci"
     assert "check-ci" in decision.next_command
+
+
+def test_continue_suggests_fix_patch_after_failed_tests_are_analyzed(tmp_path: Path):
+    state = DeliveryState(
+        request_id="req_test",
+        repo_path=str(tmp_path),
+        original_request="Update README",
+        test_status="failed",
+        fix_patch_attempt_count=0,
+        fix_patch_max_attempts=3,
+    )
+    state.mark_completed("apply_patch")
+    state.mark_completed("detect_tests")
+    state.mark_completed("run_tests")
+    state.mark_completed("analyze_test_failure")
+
+    decision = determine_next_workflow_step(tmp_path, state)
+
+    assert decision.status == "ready"
+    assert decision.next_action == "generate_fix_patch"
+    assert "generate-fix-patch" in decision.next_command
