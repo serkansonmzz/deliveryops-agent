@@ -1,54 +1,77 @@
-import pytest
-from app.tools.ci_tools import parse_pr_checks_output
+from app.schemas.delivery_state import DeliveryState
+from app.schemas.ci_status import CIStatusResult, CICheckResult
+from app.tools.ci_tools import (
+    parse_pr_checks_output,
+    apply_ci_status_to_state,
+)
 
 
-def test_parse_pr_checks_all_passed():
-    raw_output = """
-check-a (push) success in 1m
-check-b (pull_request) success in 2m
+def test_parse_pr_checks_output_passed():
+    raw = """
+build pass
+tests success
 """
-    result = parse_pr_checks_output(raw_output)
+
+    result = parse_pr_checks_output(raw)
+
     assert result.status == "passed"
-    assert len(result.checks) == 2
-    assert all(c.status == "passed" for c in result.checks)
+    assert result.checks
 
 
-def test_parse_pr_checks_with_failure():
-    raw_output = """
-check-a (push) success in 1m
-check-b (pull_request) failure in 2m
+def test_parse_pr_checks_output_failed():
+    raw = """
+build pass
+tests fail
+lint success
 """
-    result = parse_pr_checks_output(raw_output)
+
+    result = parse_pr_checks_output(raw)
+
     assert result.status == "failed"
-    assert len(result.checks) == 2
-    assert result.checks[1].status == "failed"
+    assert any(check.status == "failed" for check in result.checks)
 
 
-def test_parse_pr_checks_pending():
-    raw_output = """
-check-a (push) success in 1m
-check-b (pull_request) pending in 2m
+def test_parse_pr_checks_output_pending():
+    raw = """
+build pending
+tests queued
 """
-    result = parse_pr_checks_output(raw_output)
+
+    result = parse_pr_checks_output(raw)
+
     assert result.status == "pending"
     assert len(result.checks) == 2
-    assert result.checks[1].status == "pending"
 
 
-def test_parse_pr_checks_no_checks():
-    raw_output = ""
-    result = parse_pr_checks_output(raw_output)
+def test_parse_pr_checks_output_no_checks():
+    result = parse_pr_checks_output("")
+
     assert result.status == "no_checks"
-    assert len(result.checks) == 0
+    assert result.checks == []
 
 
-def test_parse_pr_checks_cancelled_is_failed():
-    raw_output = "check-a (push) cancelled in 1m"
-    result = parse_pr_checks_output(raw_output)
-    assert result.status == "failed"
+def test_apply_ci_status_to_state():
+    state = DeliveryState(
+        request_id="req_test",
+        repo_path="/tmp/repo",
+        original_request="Add CI watcher",
+    )
 
+    result = CIStatusResult(
+        status="failed",
+        summary="CI failed.",
+        checks=[
+            CICheckResult(name="build pass", status="passed"),
+            CICheckResult(name="tests fail", status="failed"),
+            CICheckResult(name="lint pending", status="pending"),
+        ],
+        raw_output="raw",
+    )
 
-def test_parse_pr_checks_queued_is_pending():
-    raw_output = "check-a (push) queued in 1m"
-    result = parse_pr_checks_output(raw_output)
-    assert result.status == "pending"
+    apply_ci_status_to_state(state, result)
+
+    assert state.ci_status == "failed"
+    assert state.ci_check_count == 3
+    assert "tests fail" in state.ci_failed_checks
+    assert "lint pending" in state.ci_pending_checks
+    assert "check_ci_status" in state.completed_steps

@@ -136,19 +136,15 @@ DeliveryOps currently formalizes these roles:
 - Test Agent
 - Release Judge Agent
 
-## CI Status Awareness
+## CI Watcher
 
-Check GitHub Actions CI status for the current pull request:
+Check GitHub PR checks / GitHub Actions status:
 
 ```bash
 deliveryops check-ci --repo .
 ```
 
-DeliveryOps tracks:
-
-- Individual check status (passed/failed/pending)
-- Overall CI readiness
-- Automated blocking for production profile if CI fails
+This command reads GitHub PR check status with GitHub CLI and updates `.deliveryops/state.json` plus `.deliveryops/DELIVERY.md`.
 
 ## Smoke Test
 
