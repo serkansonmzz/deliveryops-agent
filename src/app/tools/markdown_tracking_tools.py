@@ -98,7 +98,9 @@ def render_delivery_markdown(state: DeliveryState) -> str:
     for step_key, label in CHECKLIST_STEPS:
         checked = "x" if step_key in state.completed_steps else " "
         lines.append(f"- [{checked}] {label}")
-        lines.append("## Architecture Review Summary")
+
+    lines.append("")
+    lines.append("## Architecture Review Summary")
     lines.append("")
     lines.append(state.architecture_review_summary or "pending")
     lines.append("")
