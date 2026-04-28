@@ -35,6 +35,10 @@ class DeliveryState(BaseModel):
     last_policy_decision: str | None = None
     policy_warnings: list[str] = Field(default_factory=list)
 
+    last_agent_role_reviewed: str | None = None
+    agent_role_status_summary: str | None = None
+    agent_role_notes: list[str] = Field(default_factory=list)
+
     test_status: str | None = None
     test_command: str | None = None
     test_exit_code: int | None = None

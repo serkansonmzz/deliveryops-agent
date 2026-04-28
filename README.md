@@ -111,6 +111,31 @@ Approval requests include:
 - rollback note
 - active policy profile
 
+## Agent Roles
+
+List the formal DeliveryOps agent roles:
+
+```bash
+deliveryops agent-roles --repo .
+```
+
+Inspect one role and update the DeliveryOps tracking file:
+
+```bash
+deliveryops agent-role-status --repo . --role dev_agent
+```
+
+DeliveryOps currently formalizes these roles:
+
+- Intake Agent
+- Product Owner Agent
+- Architecture Council Agent
+- Delivery Manager Agent
+- GitHub Operator Agent
+- Dev Agent
+- Test Agent
+- Release Judge Agent
+
 ## Smoke Test
 
 Run a local end-to-end smoke test without touching the real GitHub repository:
