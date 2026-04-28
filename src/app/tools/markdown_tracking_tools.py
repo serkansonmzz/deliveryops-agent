@@ -62,6 +62,23 @@ def render_delivery_markdown(state: DeliveryState) -> str:
         lines.append("- pending")
     lines.append("")
 
+    lines.append("## Agent Role Status")
+    lines.append("")
+    lines.append(f"- Last Reviewed Role: `{state.last_agent_role_reviewed or 'pending'}`")
+    lines.append("")
+    lines.append("### Summary")
+    lines.append("")
+    lines.append(state.agent_role_status_summary or "pending")
+    lines.append("")
+    lines.append("### Agent Role Notes")
+    lines.append("")
+    if state.agent_role_notes:
+        for note in state.agent_role_notes:
+            lines.append(f"- {note}")
+    else:
+        lines.append("- pending")
+    lines.append("")
+
     lines.append("## Pending Approval Request")
     lines.append("")
     lines.append(f"- Action: `{state.approval_request_action or state.pending_action or 'pending'}`")
