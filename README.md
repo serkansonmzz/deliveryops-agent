@@ -227,6 +227,21 @@ See:
 
 - `docs/V020_AGENT_ARCHITECTURE.md`
 
+## Internal CLI Organization
+
+DeliveryOps keeps the public CLI command names stable, but internally groups command handlers by responsibility:
+
+- workflow commands
+- approval commands
+- patch commands
+- test commands
+- Git/GitHub delivery commands
+- release commands
+- policy commands
+- agent commands
+
+The CLI entrypoint remains `app.main:app`.
+
 ## Docs
 
 - `docs/MVP_RELEASE_CANDIDATE.md`
