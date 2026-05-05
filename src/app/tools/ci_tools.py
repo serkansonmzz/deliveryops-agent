@@ -1,9 +1,12 @@
 from pathlib import Path
 
+from app.adapters.github_cli_adapter import (
+    ensure_gh_authenticated,
+    get_pr_checks,
+)
 from app.schemas.ci_status import CICheckResult, CIStatusResult
 from app.schemas.delivery_state import DeliveryState
 from app.tools.git_tools import get_current_branch
-from app.tools.github_tools import ensure_gh_authenticated, run_gh
 
 
 def parse_pr_checks_output(raw_output: str) -> CIStatusResult:
@@ -66,27 +69,18 @@ def check_pull_request_ci_status(
     repo_path: Path,
     state: DeliveryState,
 ) -> CIStatusResult:
-    ensure_gh_authenticated()
+    ensure_gh_authenticated(repo_path)
 
     branch = state.pr_head_branch or state.pushed_branch or get_current_branch(repo_path)
 
     if not branch:
         raise RuntimeError("Cannot check CI status because no branch was detected.")
 
-    result = run_gh(
-        [
-            "pr",
-            "checks",
-            branch,
-        ],
-        cwd=repo_path,
-    )
+    result = get_pr_checks(branch=branch, cwd=repo_path)
 
     # gh pr checks returns non-zero for failed/pending checks in some cases.
     # We still want to parse the output rather than immediately fail.
-    raw_output = "\n".join(
-        part for part in [result.stdout, result.stderr] if part.strip()
-    )
+    raw_output = result.combined_output
 
     if not raw_output.strip():
         if result.return_code != 0:

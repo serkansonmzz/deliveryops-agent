@@ -257,6 +257,19 @@ CLI command
 
 This keeps the public CLI stable while making workflow behavior easier to test and evolve.
 
+## Light Ports / Adapters Boundary
+
+DeliveryOps keeps external process calls behind lightweight adapters.
+
+Examples:
+
+- Git CLI adapter
+- GitHub CLI adapter
+- Test runner adapter
+- Process adapter
+
+The goal is to keep workflow and service logic independent from direct subprocess calls where practical, without introducing heavy framework-level architecture.
+
 ## Docs
 
 - `docs/MVP_RELEASE_CANDIDATE.md`

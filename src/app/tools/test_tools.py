@@ -1,18 +1,11 @@
-import shlex
-import subprocess
 from pathlib import Path
 
+from app.adapters.test_runner_adapter import (
+    is_safe_test_command,
+    parse_command,
+    run_test_command,
+)
 from app.schemas.test_run_result import TestRunResult
-
-
-SAFE_TEST_COMMANDS = {
-    ("uv", "run", "pytest", "-q"),
-    ("python", "-m", "pytest", "-q"),
-    ("pytest", "-q"),
-    ("npm", "test"),
-    ("pnpm", "test"),
-    ("yarn", "test"),
-}
 
 
 def detect_test_command(repo_path: Path) -> str | None:
@@ -34,16 +27,6 @@ def detect_test_command(repo_path: Path) -> str | None:
         return "npm test"
 
     return None
-
-
-def parse_command(command: str) -> tuple[str, ...]:
-    return tuple(shlex.split(command))
-
-
-def is_safe_test_command(command: str) -> bool:
-    return parse_command(command) in SAFE_TEST_COMMANDS
-
-
 def summarize_test_output(exit_code: int, stdout: str, stderr: str) -> str:
     if exit_code == 0:
         return "Tests passed successfully."
@@ -60,24 +43,15 @@ def run_safe_test_command(
     command: str,
     timeout_seconds: int = 120,
 ) -> TestRunResult:
-    if not is_safe_test_command(command):
-        raise RuntimeError(f"Refusing to run unsafe test command: {command}")
-
-    args = list(parse_command(command))
-
-    result = subprocess.run(
-        args,
-        cwd=repo_path,
-        text=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        timeout=timeout_seconds,
-        check=False,
+    result = run_test_command(
+        repo_path=repo_path,
+        command=command,
+        timeout_seconds=timeout_seconds,
     )
 
-    status = "passed" if result.returncode == 0 else "failed"
+    status = "passed" if result.return_code == 0 else "failed"
     summary = summarize_test_output(
-        exit_code=result.returncode,
+        exit_code=result.return_code,
         stdout=result.stdout,
         stderr=result.stderr,
     )
@@ -85,7 +59,7 @@ def run_safe_test_command(
     return TestRunResult(
         command=command,
         status=status,
-        exit_code=result.returncode,
+        exit_code=result.return_code,
         stdout=result.stdout.strip(),
         stderr=result.stderr.strip(),
         summary=summary,
