@@ -632,7 +632,7 @@ def create_issue(
 @app.command("auto-continue")
 def auto_continue_command(
     repo: str = typer.Option(".", help="Path to the local repository."),
-    max_steps: int = typer.Option(5, help="Maximum number of safe steps to execute."),
+    max_steps: int = typer.Option(5, help="Maximum number of safe workflow steps to execute."),
 ):
     repo_path = resolve_repo_path(repo)
     state = load_state(repo_path)
@@ -923,10 +923,10 @@ def smoke_test_command(
 
 @app.command()
 def run(
-    repo: str = typer.Option(".", help="Path to the local repository."),
-    github_owner: str | None = typer.Option(None, help="GitHub owner/user/org."),
+    repo: str = typer.Option(".", help="Path to the target local Git repository."),
+    github_owner: str | None = typer.Option(None, help="GitHub repository owner."),
     github_repo: str | None = typer.Option(None, help="GitHub repository name."),
-    request: str = typer.Option(..., help="Feature request text."),
+    request: str = typer.Option(..., help="Feature request to deliver."),
 ):
     repo_path = resolve_repo_path(repo)
     ensure_git_repo(repo_path)

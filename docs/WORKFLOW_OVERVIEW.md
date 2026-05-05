@@ -71,3 +71,11 @@ deliveryops auto-continue --repo .
 ```
 
 to automatically execute safe local steps.
+
+## Release Validation References
+
+Use these supporting documents while preparing the final `v0.1.0` release:
+
+- `docs/DEMO_SCRIPT.md`
+- `docs/MANUAL_E2E_TEST.md`
+- `docs/V010_FINAL_CHECKLIST.md`
