@@ -231,3 +231,42 @@ def test_continue_suggests_fix_patch_after_failed_tests_are_analyzed(tmp_path: P
     assert decision.status == "ready"
     assert decision.next_action == "generate_fix_patch"
     assert "generate-fix-patch" in decision.next_command
+
+
+def test_continue_analyzes_failed_tests(tmp_path: Path):
+    state = DeliveryState(
+        request_id="req_test",
+        repo_path=str(tmp_path),
+        original_request="Update README documentation",
+        test_status="failed",
+        test_output="AssertionError: assert 1 == 2",
+    )
+    state.mark_completed("apply_patch")
+    state.mark_completed("detect_tests")
+    state.mark_completed("run_tests")
+
+    decision = determine_next_workflow_step(tmp_path, state)
+
+    assert decision.status == "ready"
+    assert decision.next_action == "analyze_test_failure"
+    assert "analyze-test-failure" in decision.next_command
+
+
+def test_continue_generates_fix_patch_after_failed_tests_are_analyzed(tmp_path: Path):
+    state = DeliveryState(
+        request_id="req_test",
+        repo_path=str(tmp_path),
+        original_request="Update README documentation",
+        test_status="failed",
+        test_output="AssertionError: assert 1 == 2",
+    )
+    state.mark_completed("apply_patch")
+    state.mark_completed("detect_tests")
+    state.mark_completed("run_tests")
+    state.mark_completed("analyze_test_failure")
+
+    decision = determine_next_workflow_step(tmp_path, state)
+
+    assert decision.status == "ready"
+    assert decision.next_action == "generate_fix_patch"
+    assert "generate-fix-patch" in decision.next_command

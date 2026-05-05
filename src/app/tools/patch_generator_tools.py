@@ -1,18 +1,3 @@
-from pathlib import Path
-
-from app.schemas.delivery_state import DeliveryState
-from app.tools.diff_tools import build_unified_diff, write_generated_patch
-
-
-def can_generate_readme_patch(state: DeliveryState) -> bool:
-    request = state.original_request.lower()
-
-    return any(
-        keyword in request
-        for keyword in ["readme", "documentation", "docs", "document"]
-    )
-
-
 import subprocess
 from pathlib import Path
 
@@ -74,14 +59,6 @@ def generate_patch(repo_path: Path, state: DeliveryState) -> Path | None:
         if not patch_content.strip():
             return None
 
-        return write_generated_patch(repo_path, patch_content)
-
-    return None
-
-
-def generate_patch(repo_path: Path, state: DeliveryState) -> Path | None:
-    if can_generate_readme_patch(state):
-        patch_content = build_readme_patch(repo_path, state)
         return write_generated_patch(repo_path, patch_content)
 
     return None

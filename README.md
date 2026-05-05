@@ -267,3 +267,9 @@ v0.1.0-rc1
 → docs cleanup
 → v0.1.0 final release
 ```
+
+## License
+
+This project is licensed under the MIT License.
+
+See [LICENSE](LICENSE) for details.
