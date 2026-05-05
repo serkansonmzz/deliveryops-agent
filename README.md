@@ -211,6 +211,22 @@ uv run deliveryops generate-fix-patch --repo .
 
 The command uses failure analysis to ask the Dev Agent for a minimal fix patch. The patch is still sanitized, validated, and requires `apply_patch` approval before being applied.
 
+## v0.2.0 Direction
+
+After the v0.1.0 MVP release, DeliveryOps Agent will deepen the agent architecture.
+
+The next architecture layer focuses on:
+
+- formal agent prompt files
+- agent definitions
+- structured outputs per agent
+- Agno agent factory
+- central feature delivery workflow orchestration
+
+See:
+
+- `docs/V020_AGENT_ARCHITECTURE.md`
+
 ## Docs
 
 - `docs/MVP_RELEASE_CANDIDATE.md`
