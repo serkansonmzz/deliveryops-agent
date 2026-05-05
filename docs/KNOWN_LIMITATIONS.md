@@ -36,3 +36,21 @@ Avoid using DeliveryOps unattended on:
 - security-sensitive repositories
 - repositories with complex release processes
 - repositories where CI/CD has irreversible side effects
+
+## v0.1.0 Scope Notes
+
+DeliveryOps Agent v0.1.0 focuses on GitHub-based delivery workflows for existing repositories.
+
+It does not provide:
+
+- full autonomous coding without human approval
+- production deployment
+- automatic PR merge
+- Jira/Trello integration
+- MCP integration
+- full multi-agent Agno workflow orchestration
+- web UI
+- complex multi-repository orchestration
+- guaranteed perfect patch generation
+
+AI-generated patches must still be reviewed. The system validates and gates patches, but it does not replace human engineering judgment.

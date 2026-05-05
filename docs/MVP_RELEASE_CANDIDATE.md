@@ -6,6 +6,8 @@ DeliveryOps Agent is currently at MVP release candidate stage.
 
 The system is CLI-first and designed for existing local Git repositories connected to GitHub.
 
+This release candidate is being polished for the final `v0.1.0` release with focused documentation cleanup, demo preparation, and manual validation guidance.
+
 ## Core MVP Capabilities
 
 - Initialize a local DeliveryOps workspace
@@ -105,3 +107,11 @@ deliveryops final-report --repo .
 - [ ] `.deliveryops/` runtime files are ignored
 - [ ] No secrets are committed
 - [ ] Release readiness check runs
+
+## Final Polish References
+
+Use these documents during final `v0.1.0` preparation:
+
+- `docs/DEMO_SCRIPT.md`
+- `docs/MANUAL_E2E_TEST.md`
+- `docs/V010_FINAL_CHECKLIST.md`
