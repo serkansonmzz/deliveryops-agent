@@ -1,12 +1,9 @@
 import typer
 
 from app.cli.common import console, resolve_repo_path
+from app.services.approval_service import get_or_build_approval_status
 from app.schemas.approval_record import ApprovalRecord
 from app.state_store import load_state, save_state
-from app.tools.approval_request_tools import (
-    apply_approval_request_to_state,
-    build_approval_request,
-)
 from app.tools.approval_tools import append_approval_record
 from app.tools.markdown_tracking_tools import update_delivery_markdown
 
@@ -107,42 +104,35 @@ def register_approval_commands(app: typer.Typer) -> None:
         repo: str = typer.Option(".", help="Path to the local repository."),
     ):
         repo_path = resolve_repo_path(repo)
-        state = load_state(repo_path)
+        result = get_or_build_approval_status(repo_path)
 
-        if not state.pending_approval and not state.pending_action:
+        if result.status == "none":
             console.print("[green]No pending approval.[/green]")
-            raise typer.Exit(code=0)
-
-        action = state.pending_action or state.approval_request_action
-
-        if action and not state.approval_request_action:
-            request = build_approval_request(repo_path, state, action)
-            apply_approval_request_to_state(state, request)
-            save_state(state)
-            update_delivery_markdown(state)
+            return
 
         console.print("[bold]Pending Approval Request[/bold]")
-        console.print(f"Action: {state.approval_request_action or state.pending_action}")
-        console.print(f"Risk Level: {state.approval_request_risk_level or 'pending'}")
-        console.print(f"Reason: {state.approval_request_reason or 'pending'}")
+        console.print(f"Action: {result.details.get('action')}")
+        console.print(f"Risk Level: {result.details.get('risk_level') or 'pending'}")
+        console.print(f"Reason: {result.details.get('reason') or 'pending'}")
 
-        if state.approval_request_command:
+        if result.details.get("command"):
             console.print("")
             console.print("[bold]Command[/bold]")
-            console.print(state.approval_request_command)
+            console.print(str(result.details.get("command")))
 
-        if state.approval_request_affected_files:
+        if result.details.get("affected_files"):
             console.print("")
             console.print("[bold]Affected Files[/bold]")
-            for file_path in state.approval_request_affected_files:
-                console.print(f"- {file_path}")
+            for file_path in str(result.details.get("affected_files")).split(", "):
+                if file_path:
+                    console.print(f"- {file_path}")
 
-        if state.approval_request_expected_result:
+        if result.details.get("expected_result"):
             console.print("")
             console.print("[bold]Expected Result[/bold]")
-            console.print(state.approval_request_expected_result)
+            console.print(str(result.details.get("expected_result")))
 
-        if state.approval_request_rollback_note:
+        if result.details.get("rollback_note"):
             console.print("")
             console.print("[bold]Rollback Note[/bold]")
-            console.print(state.approval_request_rollback_note)
+            console.print(str(result.details.get("rollback_note")))

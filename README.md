@@ -242,6 +242,21 @@ DeliveryOps keeps the public CLI command names stable, but internally groups com
 
 The CLI entrypoint remains `app.main:app`.
 
+## Application Service Layer
+
+DeliveryOps keeps CLI handlers thin by moving workflow use-case logic into application services.
+
+The intended internal flow is:
+
+```text
+CLI command
+→ application service
+→ tools / policies / agents
+→ state.json + DELIVERY.md
+```
+
+This keeps the public CLI stable while making workflow behavior easier to test and evolve.
+
 ## Docs
 
 - `docs/MVP_RELEASE_CANDIDATE.md`
