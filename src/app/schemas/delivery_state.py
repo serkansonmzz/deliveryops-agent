@@ -17,6 +17,10 @@ class DeliveryState(BaseModel):
     branch_name: str | None = None
 
     original_request: str
+    feature_request_title: str | None = None
+    feature_request_summary: str | None = None
+    issue_spec_title: str | None = None
+    issue_spec_labels: list[str] = Field(default_factory=list)
     current_step: str = "initialized"
     completed_steps: list[str] = Field(default_factory=list)
 

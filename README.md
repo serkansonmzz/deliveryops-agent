@@ -270,6 +270,21 @@ Examples:
 
 The goal is to keep workflow and service logic independent from direct subprocess calls where practical, without introducing heavy framework-level architecture.
 
+## Intake and Product Owner Agents
+
+DeliveryOps uses an Intake Agent and a Product Owner Agent to structure raw feature requests before creating GitHub issues.
+
+The flow is:
+
+```text
+raw request
+→ FeatureRequest
+→ IssueSpec
+→ GitHub issue
+```
+
+If an LLM is unavailable or returns unusable output, DeliveryOps falls back to deterministic issue generation so the workflow can continue.
+
 ## Docs
 
 - `docs/MVP_RELEASE_CANDIDATE.md`
