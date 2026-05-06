@@ -22,6 +22,7 @@ def test_core_commands_are_registered():
         "run",
         "continue",
         "auto-continue",
+        "analyze-repo",
         "approval-status",
         "apply-patch",
         "detect-tests",

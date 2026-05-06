@@ -130,6 +130,34 @@ def render_delivery_markdown(state: DeliveryState) -> str:
     lines.append(state.architecture_review_summary or "pending")
     lines.append("")
 
+    lines.append("## Repository Analysis")
+    lines.append("")
+    lines.append(state.repo_analysis_summary or "pending")
+    lines.append("")
+    lines.append(f"- Source Files: `{state.repo_source_file_count}`")
+    lines.append(f"- Test Files: `{state.repo_test_file_count}`")
+    lines.append(f"- Documentation Files: `{state.repo_documentation_file_count}`")
+    lines.append(f"- Config Files: `{state.repo_config_file_count}`")
+    lines.append("")
+    lines.append("### Risky Files")
+    lines.append("")
+    if state.repo_risky_files:
+        for file_path in state.repo_risky_files[:20]:
+            lines.append(f"- `{file_path}`")
+    else:
+        lines.append("- pending")
+    lines.append("")
+    lines.append("### Source/Test Map")
+    lines.append("")
+    if state.repo_source_test_map:
+        for source_file, test_files in list(state.repo_source_test_map.items())[:20]:
+            lines.append(f"- `{source_file}`")
+            for test_file in test_files:
+                lines.append(f"  - `{test_file}`")
+    else:
+        lines.append("- pending")
+    lines.append("")
+
     lines.append("### Detected Stack")
     lines.append("")
     if state.detected_stack:

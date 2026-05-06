@@ -6,6 +6,7 @@ from app.cli.common import console, resolve_repo_path
 from app.schemas.delivery_state import DeliveryState
 from app.services.agent_intake_service import run_intake_agent
 from app.services.issue_spec_service import run_product_owner_agent
+from app.services.repo_analysis_service import run_repo_analysis
 from app.state_store import ensure_workspace, load_state, save_state
 from app.tools.approval_request_tools import (
     apply_approval_request_to_state,
@@ -26,6 +27,7 @@ from app.tools.git_tools import (
 from app.tools.github_tools import create_github_issue
 from app.tools.markdown_tracking_tools import update_delivery_markdown
 from app.tools.patch_proposal_tools import build_patch_proposal
+from app.tools.repo_analysis_tools import analyze_repository
 from app.tools.smoke_test_tools import run_local_smoke_test
 from app.tools.workflow_resume_tools import determine_next_workflow_step
 
@@ -145,6 +147,28 @@ def register_workflow_commands(app: typer.Typer) -> None:
         console.print("[bold]Git Status[/bold]")
         console.print(status_text or "Working tree clean.")
 
+    @app.command("analyze-repo")
+    def analyze_repo_command(
+        repo: str = typer.Option(".", help="Path to the local repository."),
+    ):
+        repo_path = resolve_repo_path(repo)
+        result = run_repo_analysis(repo_path)
+
+        console.print("[green]Repository analysis completed.[/green]")
+        console.print(result.message)
+
+        if result.details:
+            console.print("")
+            console.print("[bold]Counts[/bold]")
+            for key, value in result.details.items():
+                console.print(f"- {key}: {value}")
+
+        if result.warnings:
+            console.print("")
+            console.print("[yellow]Warnings[/yellow]")
+            for warning in result.warnings:
+                console.print(f"- {warning}")
+
     @app.command("smoke-test")
     def smoke_test_command(
         repo: str = typer.Option(".", help="Path to the local repository."),
@@ -194,6 +218,19 @@ def register_workflow_commands(app: typer.Typer) -> None:
         state.mark_completed("inspect_repository")
         state.mark_completed("initialize_workspace")
 
+        repo_analysis = analyze_repository(repo_path, request)
+        state.detected_stack = repo_analysis.detected_stack
+        state.repo_analysis_summary = repo_analysis.summary
+        state.repo_source_file_count = len(repo_analysis.source_files)
+        state.repo_test_file_count = len(repo_analysis.test_files)
+        state.repo_documentation_file_count = len(repo_analysis.documentation_files)
+        state.repo_config_file_count = len(repo_analysis.config_files)
+        state.repo_risky_files = repo_analysis.risky_files
+        state.repo_source_test_map = repo_analysis.source_test_map
+        if repo_analysis.likely_files:
+            state.likely_files = [item.path for item in repo_analysis.likely_files]
+        state.mark_completed("analyze_repository")
+
         if github_owner and github_repo:
             feature_request = run_intake_agent(
                 raw_request=request,
@@ -232,9 +269,11 @@ def register_workflow_commands(app: typer.Typer) -> None:
             implementation_plan = build_implementation_plan(architecture_review)
 
             state.architecture_review_summary = architecture_review.summary
-            state.detected_stack = architecture_review.detected_stack
+            if architecture_review.detected_stack:
+                state.detected_stack = architecture_review.detected_stack
             state.affected_areas = architecture_review.affected_areas
-            state.likely_files = architecture_review.likely_files
+            if architecture_review.likely_files:
+                state.likely_files = architecture_review.likely_files
             state.risk_notes = architecture_review.risks
             state.security_notes = architecture_review.security_notes
             state.testing_notes = architecture_review.testing_notes
