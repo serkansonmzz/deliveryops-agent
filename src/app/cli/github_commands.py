@@ -144,6 +144,11 @@ def register_github_commands(app: typer.Typer) -> None:
         console.print(f"Status: {result.status}")
         console.print(result.summary)
 
+        if result.error:
+            console.print("")
+            console.print("[yellow]Details[/yellow]")
+            console.print(result.error)
+
         if result.status == "failed":
             console.print("")
             console.print("[red]Failed Checks[/red]")
@@ -157,3 +162,6 @@ def register_github_commands(app: typer.Typer) -> None:
             console.print("[yellow]Pending Checks[/yellow]")
             for check in state.ci_pending_checks:
                 console.print(f"- {check}")
+
+        if result.status in {"unavailable", "unknown", "no_pr"}:
+            raise typer.Exit(code=1)

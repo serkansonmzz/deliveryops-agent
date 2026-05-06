@@ -95,3 +95,16 @@ It adds:
 - source-to-test mapping
 
 This gives Architecture Council, Dev Agent, Test Agent, and Release Judge better context.
+
+## Phase 39: GitHub / CI Adapter Hardening
+
+Phase 39 improves GitHub and CI integration reliability.
+
+It adds:
+
+- GitHub CLI availability checks
+- authentication error handling
+- missing PR handling
+- JSON-based PR check parsing
+- CI status normalization
+- better CI error reporting in state and DELIVERY.md

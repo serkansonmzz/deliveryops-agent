@@ -295,6 +295,26 @@ deliveryops analyze-repo --repo .
 
 The repository analysis step detects stack signals, source files, test files, documentation files, risky files, and likely files related to the current request.
 
+## GitHub / CI Hardening
+
+DeliveryOps reads GitHub PR check status through GitHub CLI.
+
+The CI watcher handles:
+
+- missing GitHub CLI
+- missing authentication
+- missing pull request
+- no checks
+- pending checks
+- failed checks
+- passed checks
+
+Use:
+
+```bash
+deliveryops check-ci --repo .
+```
+
 ## Docs
 
 - `docs/MVP_RELEASE_CANDIDATE.md`
