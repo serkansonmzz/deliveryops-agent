@@ -107,6 +107,12 @@ def evaluate_release_readiness(repo_path: Path, state: DeliveryState) -> Release
         warnings.append("GitHub CI checks are still pending.")
     elif state.ci_status == "no_checks":
         warnings.append("No GitHub CI checks were found.")
+    elif state.ci_status == "no_pr":
+        warnings.append("No pull request was found for CI checks.")
+    elif state.ci_status == "unavailable":
+        warnings.append("GitHub CI status is unavailable.")
+    elif state.ci_status == "unknown":
+        warnings.append("GitHub CI status could not be determined.")
 
     if not state.commit_message and not state.commit_hash:
         warnings.append("Commit message has not been generated yet.")

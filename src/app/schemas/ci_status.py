@@ -6,6 +6,7 @@ class CICheckResult(BaseModel):
     status: str
     conclusion: str | None = None
     url: str | None = None
+    details: str | None = None
 
 
 class CIStatusResult(BaseModel):
@@ -13,3 +14,4 @@ class CIStatusResult(BaseModel):
     summary: str
     checks: list[CICheckResult] = Field(default_factory=list)
     raw_output: str = ""
+    error: str | None = None

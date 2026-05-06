@@ -114,6 +114,7 @@ class DeliveryState(BaseModel):
     ci_status: str | None = None
     ci_summary: str | None = None
     ci_raw_output: str | None = None
+    ci_error: str | None = None
     ci_check_count: int = 0
     ci_failed_checks: list[str] = Field(default_factory=list)
     ci_pending_checks: list[str] = Field(default_factory=list)

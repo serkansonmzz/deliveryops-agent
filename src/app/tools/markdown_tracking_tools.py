@@ -262,6 +262,11 @@ def render_delivery_markdown(state: DeliveryState) -> str:
     lines.append(state.ci_summary or "pending")
     lines.append("")
 
+    lines.append("### CI Error")
+    lines.append("")
+    lines.append(state.ci_error or "pending")
+    lines.append("")
+
     lines.append("### Failed Checks")
     lines.append("")
     if state.ci_failed_checks:
