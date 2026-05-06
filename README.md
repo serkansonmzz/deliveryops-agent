@@ -315,6 +315,20 @@ Use:
 deliveryops check-ci --repo .
 ```
 
+## Feature Delivery Workflow Orchestrator
+
+DeliveryOps now has a central workflow orchestration boundary:
+
+```text
+CLI
+→ workflow service
+→ FeatureDeliveryWorkflow
+→ deterministic workflow decision tools
+→ state.json + DELIVERY.md
+```
+
+The orchestrator keeps workflow step decisions in one place and prepares the project for deeper Agno-based delivery orchestration in v0.2.x.
+
 ## Docs
 
 - `docs/MVP_RELEASE_CANDIDATE.md`

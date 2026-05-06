@@ -7,6 +7,7 @@ from app.schemas.delivery_state import DeliveryState
 from app.services.agent_intake_service import run_intake_agent
 from app.services.issue_spec_service import run_product_owner_agent
 from app.services.repo_analysis_service import run_repo_analysis
+from app.services.workflow_service import get_workflow_status
 from app.state_store import ensure_workspace, load_state, save_state
 from app.tools.approval_request_tools import (
     apply_approval_request_to_state,
@@ -29,7 +30,6 @@ from app.tools.markdown_tracking_tools import update_delivery_markdown
 from app.tools.patch_proposal_tools import build_patch_proposal
 from app.tools.repo_analysis_tools import analyze_repository
 from app.tools.smoke_test_tools import run_local_smoke_test
-from app.tools.workflow_resume_tools import determine_next_workflow_step
 
 
 def register_workflow_commands(app: typer.Typer) -> None:
@@ -78,26 +78,32 @@ def register_workflow_commands(app: typer.Typer) -> None:
         repo: str = typer.Option(".", help="Path to the local repository."),
     ):
         repo_path = resolve_repo_path(repo)
-        state = load_state(repo_path)
+        result = get_workflow_status(repo_path)
 
-        decision = determine_next_workflow_step(repo_path, state)
+        console.print("[bold]DeliveryOps Workflow Status[/bold]")
+        console.print(f"Status: {result.status}")
+        console.print(f"Current Step: {result.details.get('current_step')}")
+        console.print(f"Next Action: {result.details.get('next_action') or 'none'}")
+        console.print(f"Safe To Run: {result.details.get('safe_to_run')}")
+        console.print(f"Requires Approval: {result.details.get('requires_approval')}")
+        console.print("")
+        console.print(result.message)
 
-        console.print("[bold]DeliveryOps Continue[/bold]")
-        console.print(f"Status: {decision.status}")
-        console.print(f"Reason: {decision.reason}")
-
-        if decision.next_action:
-            console.print(f"Next Action: {decision.next_action}")
-
-        if decision.next_command:
+        if result.details.get("next_command"):
             console.print("")
             console.print("[bold]Next Command[/bold]")
-            console.print(decision.next_command)
+            console.print(str(result.details.get("next_command")))
 
-        if decision.notes:
+        if result.errors:
             console.print("")
-            console.print("[bold]Notes[/bold]")
-            for note in decision.notes:
+            console.print("[red]Blockers[/red]")
+            for error in result.errors:
+                console.print(f"- {error}")
+
+        if result.warnings:
+            console.print("")
+            console.print("[yellow]Notes[/yellow]")
+            for note in result.warnings:
                 console.print(f"- {note}")
 
     @app.command("auto-continue")

@@ -108,3 +108,17 @@ It adds:
 - JSON-based PR check parsing
 - CI status normalization
 - better CI error reporting in state and DELIVERY.md
+
+## Phase 40: FeatureDeliveryWorkflow Orchestrator
+
+Phase 40 introduces the central workflow orchestration boundary.
+
+The first version wraps the existing deterministic workflow decision logic and exposes a stable `FeatureDeliveryWorkflow` class.
+
+Responsibilities:
+
+- determine the next workflow step
+- identify safe-to-run actions
+- identify approval-required actions
+- describe the current workflow position
+- provide a future integration point for Agno workflow orchestration

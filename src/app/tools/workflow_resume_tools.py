@@ -1,3 +1,9 @@
+"""
+Deterministic workflow step decision helpers.
+
+FeatureDeliveryWorkflow wraps this module as the central orchestration boundary.
+"""
+
 from pathlib import Path
 
 from app.schemas.continue_decision import ContinueDecision
