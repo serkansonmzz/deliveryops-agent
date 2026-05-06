@@ -13,3 +13,17 @@ The issue should include:
 - Risk notes
 
 Keep the issue clear, actionable, and implementation-ready.
+The issue body must be Markdown.
+
+Required sections:
+- Problem
+- Goal
+- Scope
+- Out of Scope
+- Acceptance Criteria
+- Definition of Done
+- Technical Notes
+- Risk Notes
+
+Keep acceptance criteria testable.
+Avoid vague criteria like "works well".

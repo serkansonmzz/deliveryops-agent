@@ -1,6 +1,8 @@
 import typer
 
 from app.cli.common import console, resolve_repo_path
+from app.services.agent_intake_service import run_intake_agent
+from app.services.issue_spec_service import run_product_owner_agent
 from app.state_store import load_state, save_state
 from app.tools.approval_tools import has_approved_action
 from app.tools.ci_tools import apply_ci_status_to_state, check_pull_request_ci_status
@@ -49,9 +51,28 @@ def register_github_commands(app: typer.Typer) -> None:
     def create_issue(
         github_owner: str = typer.Option(..., help="GitHub owner/user/org."),
         github_repo: str = typer.Option(..., help="GitHub repository name."),
-        title: str = typer.Option(..., help="Issue title."),
-        body: str = typer.Option(..., help="Issue body."),
+        title: str | None = typer.Option(None, help="Issue title."),
+        body: str | None = typer.Option(None, help="Issue body."),
+        request: str | None = typer.Option(
+            None,
+            help="Raw feature request to structure into an issue.",
+        ),
     ):
+        if request and not title and not body:
+            feature_request = run_intake_agent(
+                raw_request=request,
+                repo_path=None,
+            )
+            issue_spec = run_product_owner_agent(feature_request)
+            title = issue_spec.title
+            body = issue_spec.body
+
+        if not title or not body:
+            console.print(
+                "[red]Provide either both `--title` and `--body`, or `--request`.[/red]"
+            )
+            raise typer.Exit(code=1)
+
         issue = create_github_issue(
             owner=github_owner,
             repo=github_repo,

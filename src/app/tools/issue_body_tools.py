@@ -1,3 +1,4 @@
+from app.schemas.feature_request import FeatureRequest
 from app.schemas.issue_spec import IssueSpec
 
 
@@ -69,8 +70,111 @@ Implement the requested change in a small, reviewable, and testable way.
 
 
 def build_issue_spec(request: str) -> IssueSpec:
-    return IssueSpec(
-        title=build_issue_title(request),
-        body=build_issue_body(request),
-        labels=[],
+    feature_request = FeatureRequest.from_raw_request(request)
+    issue_spec = IssueSpec.from_feature_request(
+        request_title=feature_request.title,
+        request_summary=feature_request.summary,
+    )
+    return ensure_issue_spec_has_body(issue_spec)
+
+
+def normalize_list(items: list[str], fallback: str) -> list[str]:
+    cleaned = [item.strip() for item in items if item and item.strip()]
+    return cleaned or [fallback]
+
+
+def render_bullets(items: list[str]) -> str:
+    return "\n".join(f"- {item}" for item in items)
+
+
+def build_issue_body_from_feature_request(feature_request: FeatureRequest) -> str:
+    constraints = normalize_list(
+        feature_request.constraints,
+        "No explicit constraints provided.",
+    )
+    assumptions = normalize_list(
+        feature_request.assumptions,
+        "No assumptions recorded.",
+    )
+    risks = normalize_list(
+        feature_request.initial_risks,
+        "No initial risks identified.",
+    )
+
+    return "\n".join(
+        [
+            "## Problem",
+            "",
+            feature_request.problem or feature_request.summary,
+            "",
+            "## Goal",
+            "",
+            feature_request.goal,
+            "",
+            "## Constraints",
+            "",
+            render_bullets(constraints),
+            "",
+            "## Assumptions",
+            "",
+            render_bullets(assumptions),
+            "",
+            "## Initial Risks",
+            "",
+            render_bullets(risks),
+        ]
+    )
+
+
+def build_issue_body_from_issue_spec(issue_spec: IssueSpec) -> str:
+    if issue_spec.body.strip():
+        return issue_spec.body.strip() + "\n"
+
+    return "\n".join(
+        [
+            "## Acceptance Criteria",
+            "",
+            render_bullets(
+                normalize_list(
+                    issue_spec.acceptance_criteria,
+                    "Acceptance criteria should be clarified.",
+                )
+            ),
+            "",
+            "## Definition of Done",
+            "",
+            render_bullets(
+                normalize_list(
+                    issue_spec.definition_of_done,
+                    "Definition of done should be clarified.",
+                )
+            ),
+            "",
+            "## Technical Notes",
+            "",
+            render_bullets(
+                normalize_list(
+                    issue_spec.technical_notes,
+                    "No technical notes provided.",
+                )
+            ),
+            "",
+            "## Risk Notes",
+            "",
+            render_bullets(
+                normalize_list(
+                    issue_spec.risk_notes,
+                    "No risk notes provided.",
+                )
+            ),
+        ]
+    )
+
+
+def ensure_issue_spec_has_body(issue_spec: IssueSpec) -> IssueSpec:
+    if issue_spec.body.strip():
+        return issue_spec
+
+    return issue_spec.model_copy(
+        update={"body": build_issue_body_from_issue_spec(issue_spec)}
     )

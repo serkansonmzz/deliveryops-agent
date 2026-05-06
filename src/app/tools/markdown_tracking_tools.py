@@ -37,6 +37,16 @@ def render_delivery_markdown(state: DeliveryState) -> str:
     lines.append(state.original_request)
     lines.append("")
 
+    lines.append("## Structured Request")
+    lines.append("")
+    lines.append(f"- Feature Title: `{state.feature_request_title or 'pending'}`")
+    lines.append(f"- Issue Spec Title: `{state.issue_spec_title or 'pending'}`")
+    lines.append("")
+    lines.append("### Feature Summary")
+    lines.append("")
+    lines.append(state.feature_request_summary or "pending")
+    lines.append("")
+
     lines.append("## Tracking")
     lines.append("")
     lines.append(f"- Request ID: `{state.request_id}`")

@@ -4,6 +4,8 @@ import typer
 
 from app.cli.common import console, resolve_repo_path
 from app.schemas.delivery_state import DeliveryState
+from app.services.agent_intake_service import run_intake_agent
+from app.services.issue_spec_service import run_product_owner_agent
 from app.state_store import ensure_workspace, load_state, save_state
 from app.tools.approval_request_tools import (
     apply_approval_request_to_state,
@@ -22,7 +24,6 @@ from app.tools.git_tools import (
     get_git_status,
 )
 from app.tools.github_tools import create_github_issue
-from app.tools.issue_body_tools import build_issue_spec
 from app.tools.markdown_tracking_tools import update_delivery_markdown
 from app.tools.patch_proposal_tools import build_patch_proposal
 from app.tools.smoke_test_tools import run_local_smoke_test
@@ -194,7 +195,16 @@ def register_workflow_commands(app: typer.Typer) -> None:
         state.mark_completed("initialize_workspace")
 
         if github_owner and github_repo:
-            issue_spec = build_issue_spec(request)
+            feature_request = run_intake_agent(
+                raw_request=request,
+                repo_path=str(repo_path),
+            )
+            issue_spec = run_product_owner_agent(feature_request)
+
+            state.feature_request_title = feature_request.title
+            state.feature_request_summary = feature_request.summary
+            state.issue_spec_title = issue_spec.title
+            state.issue_spec_labels = issue_spec.labels
 
             issue = create_github_issue(
                 owner=github_owner,

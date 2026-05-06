@@ -65,3 +65,18 @@ Phase 32 introduces:
 - Do not force all tools through Agno yet.
 - Do not introduce MCP yet.
 - Do not add Jira/Trello.
+
+## Phase 37: Intake + Product Owner Integration
+
+Phase 37 connects the first two formal agents to the delivery workflow:
+
+```text
+raw request
+→ Intake Agent
+→ FeatureRequest
+→ Product Owner Agent
+→ IssueSpec
+→ GitHub issue
+```
+
+Both agents use structured output contracts and deterministic fallbacks.
