@@ -74,6 +74,13 @@ class DeliveryState(BaseModel):
     detected_stack: list[str] = Field(default_factory=list)
     affected_areas: list[str] = Field(default_factory=list)
     likely_files: list[str] = Field(default_factory=list)
+    repo_analysis_summary: str | None = None
+    repo_source_file_count: int = 0
+    repo_test_file_count: int = 0
+    repo_documentation_file_count: int = 0
+    repo_config_file_count: int = 0
+    repo_risky_files: list[str] = Field(default_factory=list)
+    repo_source_test_map: dict[str, list[str]] = Field(default_factory=dict)
     risk_notes: list[str] = Field(default_factory=list)
     security_notes: list[str] = Field(default_factory=list)
     testing_notes: list[str] = Field(default_factory=list)

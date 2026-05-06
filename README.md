@@ -285,6 +285,16 @@ raw request
 
 If an LLM is unavailable or returns unusable output, DeliveryOps falls back to deterministic issue generation so the workflow can continue.
 
+## Repository Analysis
+
+Analyze repository structure and enrich DeliveryOps state:
+
+```bash
+deliveryops analyze-repo --repo .
+```
+
+The repository analysis step detects stack signals, source files, test files, documentation files, risky files, and likely files related to the current request.
+
 ## Docs
 
 - `docs/MVP_RELEASE_CANDIDATE.md`

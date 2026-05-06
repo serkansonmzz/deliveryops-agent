@@ -80,3 +80,18 @@ raw request
 ```
 
 Both agents use structured output contracts and deterministic fallbacks.
+
+## Phase 38: Better Repository Analysis
+
+Phase 38 improves evidence collection before agent reasoning.
+
+It adds:
+
+- repository file scanning
+- stack detection
+- source/test file classification
+- risky file detection
+- likely file scoring
+- source-to-test mapping
+
+This gives Architecture Council, Dev Agent, Test Agent, and Release Judge better context.

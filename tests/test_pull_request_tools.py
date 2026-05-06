@@ -102,6 +102,7 @@ def test_create_draft_pull_request(monkeypatch, tmp_path: Path):
         )
 
     monkeypatch.setattr(pull_request_tools, "run_gh", fake_run_gh)
+    monkeypatch.setattr(pull_request_tools, "ensure_gh_authenticated", lambda: None)
 
     state = DeliveryState(
         request_id="req_test",
