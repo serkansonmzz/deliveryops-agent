@@ -1,6 +1,6 @@
 # Manual End-to-End Test
 
-This document describes the manual validation flow for DeliveryOps Agent v0.1.0.
+This document describes the manual validation flow for DeliveryOps Agent v0.2.0.
 
 ## Purpose
 
@@ -37,6 +37,20 @@ Expected:
 - Working tree is clean before test
 - Unit tests pass
 - Smoke test passes
+
+## v0.2 Additional Checks
+
+```bash
+uv run deliveryops analyze-repo --repo .
+uv run deliveryops continue --repo .
+uv run deliveryops auto-continue --repo . --max-steps 3
+```
+
+Expected:
+
+- repository analysis updates `.deliveryops/DELIVERY.md`
+- continue shows the next workflow action
+- auto-continue stops before approval-required or LLM/patch-generation actions
 
 ## Manual Workflow
 

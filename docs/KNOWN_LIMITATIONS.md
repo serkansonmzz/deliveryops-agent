@@ -54,3 +54,21 @@ It does not provide:
 - guaranteed perfect patch generation
 
 AI-generated patches must still be reviewed. The system validates and gates patches, but it does not replace human engineering judgment.
+
+## v0.2.0 Limitations
+
+DeliveryOps Agent v0.2.0 improves architecture and workflow orchestration, but it is still not a fully autonomous software engineer.
+
+Current limitations:
+
+- Not all formal agent roles are fully LLM-backed yet.
+- `FeatureDeliveryWorkflow` is a deterministic orchestration boundary, not a full Agno workflow graph yet.
+- Repository analysis uses deterministic heuristics and scoring.
+- Architecture Council is not yet a full multi-agent council.
+- Release Judge remains mostly deterministic with room for deeper semantic review.
+- GitHub integration still depends on GitHub CLI.
+- CI watcher depends on GitHub PR checks availability.
+- Patch generation still requires human review and approval.
+- Auto-continue intentionally stops before LLM/patch generation and risky external writes.
+
+This is intentional for safety and observability.

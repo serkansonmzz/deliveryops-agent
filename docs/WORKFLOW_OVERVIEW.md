@@ -72,10 +72,26 @@ deliveryops auto-continue --repo .
 
 to automatically execute safe local steps.
 
+## v0.2 Workflow Decision Boundary
+
+v0.2.0 introduces a central workflow decision boundary:
+
+```text
+CLI
+→ workflow service
+→ FeatureDeliveryWorkflow
+→ deterministic workflow decision tools
+→ services / tools / adapters
+→ state.json + DELIVERY.md
+```
+
+Both `continue` and `auto-continue` use this shared workflow decision model.
+
 ## Release Validation References
 
-Use these supporting documents while preparing the final `v0.1.0` release:
+Use these supporting documents while preparing the final `v0.2.0` release:
 
 - `docs/DEMO_SCRIPT.md`
 - `docs/MANUAL_E2E_TEST.md`
-- `docs/V010_FINAL_CHECKLIST.md`
+- `docs/V020_FINAL_CHECKLIST.md`
+- `docs/V020_RELEASE_NOTES.md`

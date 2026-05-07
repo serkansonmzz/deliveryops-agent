@@ -10,6 +10,9 @@ def test_release_docs_exist():
         "docs/DEMO_SCRIPT.md",
         "docs/MANUAL_E2E_TEST.md",
         "docs/V010_FINAL_CHECKLIST.md",
+        "docs/V020_AGENT_ARCHITECTURE.md",
+        "docs/V020_FINAL_CHECKLIST.md",
+        "docs/V020_RELEASE_NOTES.md",
     ]
 
     for doc_path in required_docs:

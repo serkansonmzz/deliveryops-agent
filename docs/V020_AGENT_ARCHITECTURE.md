@@ -33,6 +33,33 @@ DeliveryOps defines these core agents:
 - Test Agent
 - Release Judge Agent
 
+## LLM-backed vs Deterministic Roles
+
+DeliveryOps separates agent roles from LLM calls.
+
+Some roles may use LLMs for reasoning or structured output:
+
+- Intake Agent
+- Product Owner Agent
+- Architecture Council Agent
+- Dev Agent
+- Release Judge Agent
+
+Some roles should remain mostly deterministic:
+
+- GitHub Operator Agent
+- Test Agent test runner behavior
+- Delivery Manager workflow gate behavior
+- Policy and approval enforcement
+
+The guiding principle is:
+
+```text
+LLM agents reason and propose.
+Deterministic tools execute and enforce.
+Policy and approval gates decide risky actions.
+```
+
 ## Architecture Direction
 
 The agent layer should move toward:
