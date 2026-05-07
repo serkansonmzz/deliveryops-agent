@@ -329,6 +329,23 @@ CLI
 
 The orchestrator keeps workflow step decisions in one place and prepares the project for deeper Agno-based delivery orchestration in v0.2.x.
 
+## Auto-Continue Safety
+
+`auto-continue` uses the central `FeatureDeliveryWorkflow` orchestrator to decide whether the next workflow step is safe to run automatically.
+
+It will stop before actions that:
+
+- require approval
+- may generate patches
+- may call an LLM
+- write to external systems in risky ways
+
+Example:
+
+```bash
+deliveryops auto-continue --repo . --max-steps 5
+```
+
 ## Docs
 
 - `docs/MVP_RELEASE_CANDIDATE.md`
