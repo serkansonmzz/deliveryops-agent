@@ -122,3 +122,16 @@ Responsibilities:
 - identify approval-required actions
 - describe the current workflow position
 - provide a future integration point for Agno workflow orchestration
+
+## Phase 41: Auto-Continue Orchestrator Integration
+
+Phase 41 connects `auto-continue` to the central `FeatureDeliveryWorkflow` boundary.
+
+The orchestrator now decides whether the next step is:
+
+- safe to run automatically
+- approval-required
+- blocked
+- manually triggered because it may call an LLM or generate patches
+
+This keeps `continue` and `auto-continue` aligned around the same workflow decision model.

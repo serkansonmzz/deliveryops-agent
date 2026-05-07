@@ -7,7 +7,7 @@ from app.schemas.delivery_state import DeliveryState
 from app.services.agent_intake_service import run_intake_agent
 from app.services.issue_spec_service import run_product_owner_agent
 from app.services.repo_analysis_service import run_repo_analysis
-from app.services.workflow_service import get_workflow_status
+from app.services.workflow_service import get_workflow_status, run_auto_continue
 from app.state_store import ensure_workspace, load_state, save_state
 from app.tools.approval_request_tools import (
     apply_approval_request_to_state,
@@ -17,7 +17,6 @@ from app.tools.architecture_review_tools import (
     build_architecture_review,
     build_implementation_plan,
 )
-from app.tools.auto_continue_tools import run_safe_auto_continue
 from app.tools.branch_name_tools import build_feature_branch_name
 from app.tools.git_tools import (
     create_branch,
@@ -112,31 +111,38 @@ def register_workflow_commands(app: typer.Typer) -> None:
         max_steps: int = typer.Option(5, help="Maximum number of safe workflow steps to execute."),
     ):
         repo_path = resolve_repo_path(repo)
-        state = load_state(repo_path)
-
-        result = run_safe_auto_continue(
-            repo_path=repo_path,
-            state=state,
-            max_steps=max_steps,
-        )
+        result = run_auto_continue(repo_path, max_steps=max_steps)
 
         console.print("[bold]DeliveryOps Auto-Continue[/bold]")
+        console.print(f"Status: {result.status}")
+        console.print(result.message)
+        console.print(f"Executed Steps: {result.details.get('executed_count', 0)}")
 
-        if result.executed_actions:
-            console.print("[green]Executed safe actions:[/green]")
-            for action in result.executed_actions:
-                console.print(f"- {action}")
-        else:
-            console.print("[yellow]No safe action was executed.[/yellow]")
+        if result.details.get("next_action"):
+            console.print("")
+            console.print("[bold]Next Action[/bold]")
+            console.print(str(result.details.get("next_action")))
 
-        console.print("")
-        console.print(f"Stopped Reason: {result.stopped_reason}")
+        if result.details.get("next_command"):
+            console.print("")
+            console.print("[bold]Next Command[/bold]")
+            console.print(str(result.details.get("next_command")))
 
-        if result.stopped_at_action:
-            console.print(f"Stopped At: {result.stopped_at_action}")
+        if result.warnings:
+            console.print("")
+            console.print("[yellow]Notes[/yellow]")
+            for warning in result.warnings:
+                console.print(f"- {warning}")
 
-        if result.completed:
-            console.print("[green]Workflow completed.[/green]")
+        if result.errors:
+            console.print("")
+            console.print("[red]Blockers[/red]")
+            for error in result.errors:
+                console.print(f"- {error}")
+            raise typer.Exit(code=1)
+
+        if result.status == "blocked":
+            raise typer.Exit(code=1)
 
     @app.command()
     def inspect(repo: str = typer.Option(".", help="Path to the local repository.")):

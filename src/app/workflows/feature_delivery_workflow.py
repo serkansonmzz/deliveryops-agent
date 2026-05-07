@@ -13,7 +13,14 @@ APPROVAL_REQUIRED_ACTIONS = {
     "comment_progress",
 }
 
-SAFE_ACTIONS = {
+LLM_OR_PATCH_GENERATION_ACTIONS = {
+    "generate_fix_patch",
+    "dev_generate_patch",
+    "generate_patch",
+}
+
+SAFE_AUTO_ACTIONS = {
+    "analyze_repository",
     "detect_tests",
     "run_tests",
     "analyze_test_failure",
@@ -41,21 +48,35 @@ class FeatureDeliveryWorkflow:
         decision = determine_next_workflow_step(self.repo_path, self.state)
         action = decision.next_action
         approval_action = action.removeprefix("approve_") if action else None
-        requires_approval = bool(
+        is_approval_required = bool(
             decision.status == "approval_required"
             or (action and action.startswith("approve_"))
             or approval_action in APPROVAL_REQUIRED_ACTIONS
             or action in APPROVAL_REQUIRED_ACTIONS
         )
-        safe_to_run = bool(decision.safe_to_run and action in SAFE_ACTIONS)
+        is_llm_or_patch_generation = (
+            action in LLM_OR_PATCH_GENERATION_ACTIONS if action else False
+        )
+        safe_to_run = bool(
+            decision.safe_to_run
+            and action in SAFE_AUTO_ACTIONS
+            and not is_approval_required
+            and not is_llm_or_patch_generation
+        )
         blockers: list[str] = []
         warnings: list[str] = []
 
-        if decision.status == "blocked":
+        if decision.status == "blocked" and not is_approval_required:
             blockers.append(decision.reason)
 
-        if requires_approval:
+        if is_approval_required:
             warnings.append(f"Action requires approval: {action}")
+
+        if is_llm_or_patch_generation:
+            warnings.append(
+                "Action requires manual trigger because it may generate patches "
+                f"or call an LLM: {action}"
+            )
 
         return WorkflowDecision(
             status=decision.status,
@@ -63,7 +84,7 @@ class FeatureDeliveryWorkflow:
             next_command=decision.next_command,
             reason=decision.reason,
             safe_to_run=safe_to_run,
-            requires_approval=requires_approval,
+            requires_approval=is_approval_required,
             blockers=blockers,
             warnings=warnings,
             notes=decision.notes,
