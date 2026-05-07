@@ -295,6 +295,36 @@ deliveryops analyze-repo --repo .
 
 The repository analysis step detects stack signals, source files, test files, documentation files, risky files, and likely files related to the current request.
 
+## v0.2.0 Architecture Update
+
+DeliveryOps Agent v0.2.0 deepens the internal architecture around agent roles, services, adapters, and workflow orchestration.
+
+Key additions:
+
+- modular CLI command organization
+- application service layer
+- lightweight ports/adapters boundary
+- formal agent definitions and prompt files
+- Intake + Product Owner agent integration
+- repository analysis
+- hardened GitHub / CI integration
+- `FeatureDeliveryWorkflow` orchestration boundary
+- safer auto-continue behavior
+
+DeliveryOps keeps a strict safety boundary:
+
+```text
+LLM agents reason and propose.
+Deterministic tools execute and enforce.
+Approval gates protect risky actions.
+```
+
+See:
+
+- `docs/V020_AGENT_ARCHITECTURE.md`
+- `docs/V020_RELEASE_NOTES.md`
+- `docs/V020_FINAL_CHECKLIST.md`
+
 ## GitHub / CI Hardening
 
 DeliveryOps reads GitHub PR check status through GitHub CLI.
