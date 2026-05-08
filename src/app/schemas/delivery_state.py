@@ -74,6 +74,10 @@ class DeliveryState(BaseModel):
     detected_stack: list[str] = Field(default_factory=list)
     affected_areas: list[str] = Field(default_factory=list)
     likely_files: list[str] = Field(default_factory=list)
+    architecture_recommended_approach: list[str] = Field(default_factory=list)
+    architecture_open_questions: list[str] = Field(default_factory=list)
+    architecture_confidence_score: float | None = None
+    architecture_review_source: str | None = None
     repo_analysis_summary: str | None = None
     repo_source_file_count: int = 0
     repo_test_file_count: int = 0

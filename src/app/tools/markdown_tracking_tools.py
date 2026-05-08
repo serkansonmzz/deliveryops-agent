@@ -125,9 +125,35 @@ def render_delivery_markdown(state: DeliveryState) -> str:
     for step_key, label in CHECKLIST_STEPS:
         checked = "x" if step_key in state.completed_steps else " "
         lines.append(f"- [{checked}] {label}")
-        lines.append("## Architecture Review Summary")
+    lines.append("")
+
+    lines.append("## Architecture Review Summary")
     lines.append("")
     lines.append(state.architecture_review_summary or "pending")
+    lines.append("")
+    lines.append(f"- Source: `{state.architecture_review_source or 'pending'}`")
+    confidence_score = (
+        state.architecture_confidence_score
+        if state.architecture_confidence_score is not None
+        else "pending"
+    )
+    lines.append(f"- Confidence Score: `{confidence_score}`")
+    lines.append("")
+    lines.append("### Recommended Approach")
+    lines.append("")
+    if state.architecture_recommended_approach:
+        for item in state.architecture_recommended_approach:
+            lines.append(f"- {item}")
+    else:
+        lines.append("- pending")
+    lines.append("")
+    lines.append("### Architecture Open Questions")
+    lines.append("")
+    if state.architecture_open_questions:
+        for item in state.architecture_open_questions:
+            lines.append(f"- {item}")
+    else:
+        lines.append("- pending")
     lines.append("")
 
     lines.append("## Repository Analysis")
@@ -171,7 +197,7 @@ def render_delivery_markdown(state: DeliveryState) -> str:
     lines.append("")
     if state.affected_areas:
         for item in state.affected_areas:
-            lines.append(f"- {item}")
+            lines.append(f"- `{item}`")
     else:
         lines.append("- pending")
     lines.append("")
@@ -189,6 +215,33 @@ def render_delivery_markdown(state: DeliveryState) -> str:
     lines.append("")
     if state.risk_notes:
         for item in state.risk_notes:
+            lines.append(f"- {item}")
+    else:
+        lines.append("- pending")
+    lines.append("")
+
+    lines.append("### Security Notes")
+    lines.append("")
+    if state.security_notes:
+        for item in state.security_notes:
+            lines.append(f"- {item}")
+    else:
+        lines.append("- pending")
+    lines.append("")
+
+    lines.append("### Testing Notes")
+    lines.append("")
+    if state.testing_notes:
+        for item in state.testing_notes:
+            lines.append(f"- {item}")
+    else:
+        lines.append("- pending")
+    lines.append("")
+
+    lines.append("### DevOps Notes")
+    lines.append("")
+    if state.devops_notes:
+        for item in state.devops_notes:
             lines.append(f"- {item}")
     else:
         lines.append("- pending")

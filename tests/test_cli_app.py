@@ -23,6 +23,7 @@ def test_core_commands_are_registered():
         "continue",
         "auto-continue",
         "analyze-repo",
+        "architecture-review",
         "approval-status",
         "apply-patch",
         "detect-tests",

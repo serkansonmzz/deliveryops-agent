@@ -5,6 +5,10 @@ import typer
 from app.cli.common import console, resolve_repo_path
 from app.schemas.delivery_state import DeliveryState
 from app.services.agent_intake_service import run_intake_agent
+from app.services.architecture_council_service import (
+    build_architecture_review_for_state,
+    run_architecture_council_agent,
+)
 from app.services.issue_spec_service import run_product_owner_agent
 from app.services.repo_analysis_service import run_repo_analysis
 from app.services.workflow_service import get_workflow_status, run_auto_continue
@@ -14,7 +18,7 @@ from app.tools.approval_request_tools import (
     build_approval_request,
 )
 from app.tools.architecture_review_tools import (
-    build_architecture_review,
+    apply_architecture_review_to_state,
     build_implementation_plan,
 )
 from app.tools.branch_name_tools import build_feature_branch_name
@@ -181,6 +185,32 @@ def register_workflow_commands(app: typer.Typer) -> None:
             for warning in result.warnings:
                 console.print(f"- {warning}")
 
+    @app.command("architecture-review")
+    def architecture_review_command(
+        repo: str = typer.Option(".", help="Path to the local repository."),
+        no_llm: bool = typer.Option(
+            False,
+            "--no-llm",
+            help="Use deterministic fallback instead of LLM.",
+        ),
+    ):
+        repo_path = resolve_repo_path(repo)
+        result = run_architecture_council_agent(
+            repo_path,
+            use_llm=False if no_llm else None,
+        )
+
+        console.print("[green]Architecture review completed.[/green]")
+        console.print(f"Source: {result.details.get('source')}")
+        console.print(f"Confidence: {result.details.get('confidence_score')}")
+        console.print(result.message)
+
+        if result.warnings:
+            console.print("")
+            console.print("[yellow]Risks / Warnings[/yellow]")
+            for warning in result.warnings:
+                console.print(f"- {warning}")
+
     @app.command("smoke-test")
     def smoke_test_command(
         repo: str = typer.Option(".", help="Path to the local repository."),
@@ -277,22 +307,12 @@ def register_workflow_commands(app: typer.Typer) -> None:
             state.branch_name = branch_name
             state.mark_completed("create_feature_branch")
 
-            architecture_review = build_architecture_review(repo_path, request)
+            architecture_review = build_architecture_review_for_state(state)
             implementation_plan = build_implementation_plan(architecture_review)
 
-            state.architecture_review_summary = architecture_review.summary
-            if architecture_review.detected_stack:
-                state.detected_stack = architecture_review.detected_stack
-            state.affected_areas = architecture_review.affected_areas
-            if architecture_review.likely_files:
-                state.likely_files = architecture_review.likely_files
-            state.risk_notes = architecture_review.risks
-            state.security_notes = architecture_review.security_notes
-            state.testing_notes = architecture_review.testing_notes
-            state.devops_notes = architecture_review.devops_notes
+            apply_architecture_review_to_state(state, architecture_review)
             state.implementation_plan = implementation_plan.steps
 
-            state.mark_completed("run_architecture_review")
             state.mark_completed("generate_implementation_plan")
 
             patch_proposal = build_patch_proposal(
