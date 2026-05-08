@@ -38,6 +38,14 @@ def test_dev_agent_definition_has_patch_schema():
     assert "patch" in definition.output_schema.__name__.lower()
 
 
+def test_architecture_council_agent_has_review_schema():
+    definition = get_agent_definition("architecture_council_agent")
+
+    assert definition.role_id == "architecture_council_agent"
+    assert definition.output_schema is not None
+    assert "ArchitectureReview" in definition.output_schema.__name__
+
+
 def test_describe_agent_mentions_prompt_and_schema():
     definition = get_agent_definition("intake_agent")
 

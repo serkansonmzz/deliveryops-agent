@@ -115,6 +115,7 @@ request
 
 - `deliveryops run --repo . --github-owner YOUR_USER --github-repo YOUR_REPO --request "..."` starts a full delivery workflow.
 - `deliveryops continue --repo .` shows the next recommended workflow step.
+- `deliveryops architecture-review --repo .` runs an Architecture Council review and updates local tracking.
 - `deliveryops approval-status --repo .` shows the current pending approval request.
 - `deliveryops apply-patch --repo .` applies an already approved patch.
 - `deliveryops detect-tests --repo .` detects a safe test command.
@@ -324,6 +325,7 @@ See:
 - `docs/V020_AGENT_ARCHITECTURE.md`
 - `docs/V020_RELEASE_NOTES.md`
 - `docs/V020_FINAL_CHECKLIST.md`
+- `docs/V030_ARCHITECTURE_AWARE_DELIVERY.md`
 
 ## GitHub / CI Hardening
 
@@ -376,6 +378,27 @@ Example:
 deliveryops auto-continue --repo . --max-steps 5
 ```
 
+## Architecture Council Agent
+
+DeliveryOps can run a lightweight Architecture Council review before implementation:
+
+```bash
+deliveryops architecture-review --repo .
+```
+
+The review uses repository analysis, likely files, risky files, source/test mapping, policy profile, and the original request to produce:
+
+- affected areas
+- recommended approach
+- architecture risks
+- security notes
+- testing notes
+- DevOps notes
+- open questions
+- confidence score
+
+If an LLM is unavailable or returns unusable output, DeliveryOps uses a deterministic fallback review.
+
 ## Docs
 
 - `docs/MVP_RELEASE_CANDIDATE.md`
@@ -385,6 +408,7 @@ deliveryops auto-continue --repo . --max-steps 5
 - `docs/MANUAL_E2E_TEST.md`
 - `docs/V010_FINAL_CHECKLIST.md`
 - `docs/MVP_RELEASE_NOTES.md`
+- `docs/V030_ARCHITECTURE_AWARE_DELIVERY.md`
 
 ## Known Limitations
 

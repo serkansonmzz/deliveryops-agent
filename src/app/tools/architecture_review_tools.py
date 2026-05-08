@@ -1,6 +1,7 @@
 from pathlib import Path
 
 from app.schemas.architecture_review import ArchitectureReview
+from app.schemas.delivery_state import DeliveryState
 from app.schemas.implementation_plan import ImplementationPlan
 from app.tools.repo_analysis_tools import detect_project_stack, find_likely_files
 
@@ -88,3 +89,41 @@ def build_implementation_plan(review: ArchitectureReview) -> ImplementationPlan:
         steps.insert(3, "Verify GitHub CLI commands against the installed gh version.")
 
     return ImplementationPlan(steps=steps)
+
+
+def build_fallback_architecture_review(state: DeliveryState) -> ArchitectureReview:
+    return ArchitectureReview.fallback(
+        request=state.original_request,
+        detected_stack=state.detected_stack,
+        likely_files=state.likely_files,
+        risky_files=state.repo_risky_files,
+    )
+
+
+def apply_architecture_review_to_state(
+    state: DeliveryState,
+    review: ArchitectureReview,
+) -> None:
+    state.architecture_review_summary = review.summary
+
+    if review.detected_stack:
+        state.detected_stack = review.detected_stack
+
+    state.affected_areas = review.affected_areas
+
+    if review.likely_files:
+        state.likely_files = review.likely_files
+    elif review.affected_areas and not state.likely_files:
+        state.likely_files = review.affected_areas
+
+    state.architecture_recommended_approach = review.recommended_approach
+    state.risk_notes = review.risks
+    state.security_notes = review.security_notes
+    state.testing_notes = review.testing_notes
+    state.devops_notes = review.devops_notes
+    state.architecture_open_questions = review.open_questions
+    state.architecture_confidence_score = review.confidence_score
+    state.architecture_review_source = review.source
+
+    state.mark_completed("architecture_review")
+    state.mark_completed("run_architecture_review")

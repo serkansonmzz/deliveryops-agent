@@ -13,6 +13,7 @@ def test_release_docs_exist():
         "docs/V020_AGENT_ARCHITECTURE.md",
         "docs/V020_FINAL_CHECKLIST.md",
         "docs/V020_RELEASE_NOTES.md",
+        "docs/V030_ARCHITECTURE_AWARE_DELIVERY.md",
     ]
 
     for doc_path in required_docs:

@@ -66,3 +66,24 @@ def test_delivery_markdown_contains_repository_analysis_section():
     assert "Repository analysis found 4 files." in markdown
     assert "Source Files: `1`" in markdown
     assert "`src/app/main.py`" in markdown
+
+
+def test_delivery_markdown_contains_architecture_review_enrichment():
+    state = DeliveryState(
+        request_id="req_test",
+        repo_path="/tmp/repo",
+        original_request="Add healthcheck endpoint.",
+        architecture_review_summary="Review summary.",
+        architecture_review_source="fallback",
+        architecture_confidence_score=0.45,
+        architecture_recommended_approach=["Keep the change focused."],
+        architecture_open_questions=["Confirm endpoint path."],
+    )
+
+    markdown = render_delivery_markdown(state)
+
+    assert "## Architecture Review Summary" in markdown
+    assert "Source: `fallback`" in markdown
+    assert "Confidence Score: `0.45`" in markdown
+    assert "Keep the change focused." in markdown
+    assert "Confirm endpoint path." in markdown

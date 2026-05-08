@@ -162,3 +162,19 @@ The orchestrator now decides whether the next step is:
 - manually triggered because it may call an LLM or generate patches
 
 This keeps `continue` and `auto-continue` aligned around the same workflow decision model.
+
+## v0.3 Forward Path
+
+The next architecture line is `v0.3 = Architecture-aware DeliveryOps`.
+
+Phase 43 starts that line by connecting the Architecture Council Agent to repository evidence and workflow state:
+
+```text
+FeatureRequest
++ IssueSpec
++ RepoAnalysis
+→ Architecture Council Agent
+→ ArchitectureReview
+```
+
+See `docs/V030_ARCHITECTURE_AWARE_DELIVERY.md`.
