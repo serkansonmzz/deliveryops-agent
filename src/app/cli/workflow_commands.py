@@ -9,6 +9,10 @@ from app.services.architecture_council_service import (
     build_architecture_review_for_state,
     run_architecture_council_agent,
 )
+from app.services.implementation_plan_service import (
+    build_implementation_plan_for_state,
+    run_implementation_planner_agent,
+)
 from app.services.issue_spec_service import run_product_owner_agent
 from app.services.repo_analysis_service import run_repo_analysis
 from app.services.workflow_service import get_workflow_status, run_auto_continue
@@ -19,7 +23,6 @@ from app.tools.approval_request_tools import (
 )
 from app.tools.architecture_review_tools import (
     apply_architecture_review_to_state,
-    build_implementation_plan,
 )
 from app.tools.branch_name_tools import build_feature_branch_name
 from app.tools.git_tools import (
@@ -29,6 +32,7 @@ from app.tools.git_tools import (
     get_git_status,
 )
 from app.tools.github_tools import create_github_issue
+from app.tools.implementation_plan_tools import apply_implementation_plan_to_state
 from app.tools.markdown_tracking_tools import update_delivery_markdown
 from app.tools.patch_proposal_tools import build_patch_proposal
 from app.tools.repo_analysis_tools import analyze_repository
@@ -211,6 +215,34 @@ def register_workflow_commands(app: typer.Typer) -> None:
             for warning in result.warnings:
                 console.print(f"- {warning}")
 
+    @app.command("implementation-plan")
+    def implementation_plan_command(
+        repo: str = typer.Option(".", help="Path to the local repository."),
+        no_llm: bool = typer.Option(
+            False,
+            "--no-llm",
+            help="Use deterministic fallback instead of LLM.",
+        ),
+    ):
+        repo_path = resolve_repo_path(repo)
+        result = run_implementation_planner_agent(
+            repo_path,
+            use_llm=False if no_llm else None,
+        )
+
+        console.print("[green]Implementation plan generated.[/green]")
+        console.print(f"Source: {result.details.get('source')}")
+        console.print(f"Confidence: {result.details.get('confidence_score')}")
+        console.print(f"Steps: {result.details.get('steps')}")
+        console.print(f"Target Files: {result.details.get('target_files')}")
+        console.print(result.message)
+
+        if result.warnings:
+            console.print("")
+            console.print("[yellow]Risks / Warnings[/yellow]")
+            for warning in result.warnings:
+                console.print(f"- {warning}")
+
     @app.command("smoke-test")
     def smoke_test_command(
         repo: str = typer.Option(".", help="Path to the local repository."),
@@ -308,12 +340,10 @@ def register_workflow_commands(app: typer.Typer) -> None:
             state.mark_completed("create_feature_branch")
 
             architecture_review = build_architecture_review_for_state(state)
-            implementation_plan = build_implementation_plan(architecture_review)
-
             apply_architecture_review_to_state(state, architecture_review)
-            state.implementation_plan = implementation_plan.steps
 
-            state.mark_completed("generate_implementation_plan")
+            implementation_plan = build_implementation_plan_for_state(state)
+            apply_implementation_plan_to_state(state, implementation_plan)
 
             patch_proposal = build_patch_proposal(
                 request=request,

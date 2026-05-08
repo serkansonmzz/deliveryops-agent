@@ -30,8 +30,9 @@ def test_build_implementation_plan_has_steps(tmp_path: Path):
 
     plan = build_implementation_plan(review)
 
-    assert len(plan.steps) >= 5
-    assert any("branch" in step.lower() for step in plan.steps)
+    assert len(plan.steps) >= 3
+    assert any("branch" in risk.lower() for risk in plan.risks)
+    assert plan.target_files
 
 
 def test_build_fallback_architecture_review_uses_state_context():

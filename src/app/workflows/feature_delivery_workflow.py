@@ -17,6 +17,8 @@ LLM_OR_PATCH_GENERATION_ACTIONS = {
     "generate_fix_patch",
     "dev_generate_patch",
     "generate_patch",
+    "architecture_review",
+    "implementation_plan",
 }
 
 SAFE_AUTO_ACTIONS = {

@@ -94,6 +94,14 @@ class DeliveryState(BaseModel):
     proposed_changes: list[str] = Field(default_factory=list)
     patch_risk_level: str | None = None
     implementation_plan: list[str] = Field(default_factory=list)
+    implementation_plan_summary: str | None = None
+    implementation_plan_source: str | None = None
+    implementation_plan_confidence_score: float | None = None
+    implementation_plan_target_files: list[str] = Field(default_factory=list)
+    implementation_plan_test_strategy: list[str] = Field(default_factory=list)
+    implementation_plan_risks: list[str] = Field(default_factory=list)
+    implementation_plan_assumptions: list[str] = Field(default_factory=list)
+    implementation_plan_steps: list[dict] = Field(default_factory=list)
     commit_message: str | None = None
     commit_body: str | None = None
     commit_rationale: str | None = None

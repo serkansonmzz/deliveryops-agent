@@ -2,7 +2,7 @@ from pathlib import Path
 
 from app.schemas.architecture_review import ArchitectureReview
 from app.schemas.delivery_state import DeliveryState
-from app.schemas.implementation_plan import ImplementationPlan
+from app.schemas.implementation_plan import ImplementationPlan, ImplementationPlanStep
 from app.tools.repo_analysis_tools import detect_project_stack, find_likely_files
 
 
@@ -72,23 +72,82 @@ def build_architecture_review(repo_path: Path, request: str) -> ArchitectureRevi
 
 
 def build_implementation_plan(review: ArchitectureReview) -> ImplementationPlan:
-    steps = [
-        "Review the generated GitHub issue and confirm the requested scope.",
-        "Inspect the likely affected files identified by the architecture review.",
-        "Make the smallest code change that satisfies the request.",
-        "Update or add focused tests for the new behavior.",
+    target_files = review.likely_files or review.affected_areas
+    test_strategy = review.testing_notes or [
         "Run the relevant test command and review the output.",
-        "Update DeliveryOps tracking files with the implementation result.",
-        "Prepare a conventional commit message after tests pass.",
     ]
+    risks = review.risks or ["Scope may need refinement during implementation."]
 
     if "Git workflow automation" in review.affected_areas:
-        steps.insert(3, "Be careful with branch-changing Git operations and preserve workflow state.")
+        risks.append("Be careful with branch-changing Git operations and preserve workflow state.")
 
     if "GitHub workflow integration" in review.affected_areas:
-        steps.insert(3, "Verify GitHub CLI commands against the installed gh version.")
+        test_strategy.append("Verify GitHub CLI commands against the installed gh version.")
 
-    return ImplementationPlan(steps=steps)
+    steps = [
+        ImplementationPlanStep(
+            step_number=1,
+            title="Confirm scope and target files",
+            description=(
+                "Review the generated GitHub issue, architecture review, and likely "
+                "affected files before patch generation."
+            ),
+            target_files=target_files[:10],
+            expected_changes=[
+                "Confirm the smallest file set required for the requested change.",
+            ],
+            test_impact=["No direct test impact."],
+            risk_level="low",
+            acceptance_mapping=[
+                "Implementation scope is understood before patch generation.",
+            ],
+            rollback_notes=["No code changes should be made in this step."],
+        ),
+        ImplementationPlanStep(
+            step_number=2,
+            title="Implement focused change",
+            description="Make the smallest code or documentation change that satisfies the request.",
+            target_files=target_files[:10],
+            expected_changes=[
+                "Update existing files relevant to the architecture review.",
+                "Avoid unrelated refactors.",
+            ],
+            test_impact=test_strategy,
+            risk_level="medium" if risks else "low",
+            acceptance_mapping=[
+                "Requested behavior is implemented or clearly documented.",
+            ],
+            rollback_notes=["Revert the generated patch if review or tests fail."],
+        ),
+        ImplementationPlanStep(
+            step_number=3,
+            title="Validate and prepare delivery",
+            description="Run safe validation and review DeliveryOps tracking before commit, push, or PR.",
+            target_files=[],
+            expected_changes=[
+                "No additional changes unless validation identifies a failure.",
+            ],
+            test_impact=test_strategy,
+            risk_level="low",
+            acceptance_mapping=[
+                "Tests pass or failures are analyzed and documented.",
+            ],
+            rollback_notes=["Do not proceed to commit or push if validation fails."],
+        ),
+    ]
+
+    return ImplementationPlan(
+        summary=(
+            "Implementation plan generated from architecture review context."
+        ),
+        steps=steps,
+        target_files=target_files[:10],
+        test_strategy=test_strategy,
+        risks=risks,
+        assumptions=review.open_questions,
+        confidence_score=review.confidence_score,
+        source=review.source,
+    )
 
 
 def build_fallback_architecture_review(state: DeliveryState) -> ArchitectureReview:

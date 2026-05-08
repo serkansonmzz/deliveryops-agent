@@ -87,3 +87,40 @@ def test_delivery_markdown_contains_architecture_review_enrichment():
     assert "Confidence Score: `0.45`" in markdown
     assert "Keep the change focused." in markdown
     assert "Confirm endpoint path." in markdown
+
+
+def test_delivery_markdown_contains_structured_implementation_plan():
+    state = DeliveryState(
+        request_id="req_test",
+        repo_path="/tmp/repo",
+        original_request="Add healthcheck endpoint.",
+        implementation_plan_summary="Plan summary.",
+        implementation_plan_source="fallback",
+        implementation_plan_confidence_score=0.45,
+        implementation_plan_target_files=["README.md"],
+        implementation_plan_test_strategy=["Run pytest."],
+        implementation_plan_risks=["Docs-only change."],
+        implementation_plan_assumptions=["Fallback planning."],
+        implementation_plan_steps=[
+            {
+                "step_number": 1,
+                "title": "Update docs",
+                "description": "Update README docs.",
+                "target_files": ["README.md"],
+                "expected_changes": ["Add usage notes."],
+                "test_impact": ["Run pytest."],
+                "risk_level": "low",
+            }
+        ],
+        implementation_plan=["1. Update docs: Update README docs."],
+    )
+
+    markdown = render_delivery_markdown(state)
+
+    assert "## Implementation Plan" in markdown
+    assert "Plan summary." in markdown
+    assert "Source: `fallback`" in markdown
+    assert "Confidence Score: `0.45`" in markdown
+    assert "`README.md`" in markdown
+    assert "#### Step 1: Update docs" in markdown
+    assert "### Legacy Flat Plan" in markdown

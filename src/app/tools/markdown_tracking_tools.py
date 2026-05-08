@@ -249,6 +249,79 @@ def render_delivery_markdown(state: DeliveryState) -> str:
 
     lines.append("## Implementation Plan")
     lines.append("")
+    lines.append(state.implementation_plan_summary or "pending")
+    lines.append("")
+    lines.append(f"- Source: `{state.implementation_plan_source or 'pending'}`")
+    plan_confidence_score = (
+        state.implementation_plan_confidence_score
+        if state.implementation_plan_confidence_score is not None
+        else "pending"
+    )
+    lines.append(f"- Confidence Score: `{plan_confidence_score}`")
+    lines.append("")
+    lines.append("### Target Files")
+    lines.append("")
+    if state.implementation_plan_target_files:
+        for file_path in state.implementation_plan_target_files:
+            lines.append(f"- `{file_path}`")
+    else:
+        lines.append("- pending")
+    lines.append("")
+    lines.append("### Plan Steps")
+    lines.append("")
+    if state.implementation_plan_steps:
+        for step in state.implementation_plan_steps:
+            lines.append(f"#### Step {step.get('step_number')}: {step.get('title')}")
+            lines.append("")
+            lines.append(step.get("description") or "No description provided.")
+            lines.append("")
+            lines.append("Target files:")
+            target_files = step.get("target_files") or []
+            if target_files:
+                for file_path in target_files:
+                    lines.append(f"- `{file_path}`")
+            else:
+                lines.append("- none")
+            lines.append("")
+            lines.append("Expected changes:")
+            for item in step.get("expected_changes") or ["pending"]:
+                lines.append(f"- {item}")
+            lines.append("")
+            lines.append("Test impact:")
+            for item in step.get("test_impact") or ["pending"]:
+                lines.append(f"- {item}")
+            lines.append("")
+            lines.append(f"Risk level: `{step.get('risk_level') or 'pending'}`")
+            lines.append("")
+    else:
+        lines.append("- pending")
+    lines.append("")
+    lines.append("### Test Strategy")
+    lines.append("")
+    if state.implementation_plan_test_strategy:
+        for item in state.implementation_plan_test_strategy:
+            lines.append(f"- {item}")
+    else:
+        lines.append("- pending")
+    lines.append("")
+    lines.append("### Implementation Plan Risks")
+    lines.append("")
+    if state.implementation_plan_risks:
+        for item in state.implementation_plan_risks:
+            lines.append(f"- {item}")
+    else:
+        lines.append("- pending")
+    lines.append("")
+    lines.append("### Implementation Plan Assumptions")
+    lines.append("")
+    if state.implementation_plan_assumptions:
+        for item in state.implementation_plan_assumptions:
+            lines.append(f"- {item}")
+    else:
+        lines.append("- pending")
+    lines.append("")
+    lines.append("### Legacy Flat Plan")
+    lines.append("")
     if state.implementation_plan:
         for index, step in enumerate(state.implementation_plan, start=1):
             lines.append(f"{index}. {step}")
