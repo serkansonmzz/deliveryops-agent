@@ -328,6 +328,26 @@ def render_delivery_markdown(state: DeliveryState) -> str:
     else:
         lines.append("pending")
     lines.append("")
+    lines.append("## Dev Agent Context")
+    lines.append("")
+    lines.append(f"- Status: `{state.dev_context_status or 'pending'}`")
+    lines.append("")
+    lines.append("### Selected Files")
+    lines.append("")
+    if state.dev_context_selected_files:
+        for file_path in state.dev_context_selected_files:
+            lines.append(f"- `{file_path}`")
+    else:
+        lines.append("- pending")
+    lines.append("")
+    lines.append("### Related Tests")
+    lines.append("")
+    if state.dev_context_related_tests:
+        for file_path in state.dev_context_related_tests:
+            lines.append(f"- `{file_path}`")
+    else:
+        lines.append("- pending")
+    lines.append("")
     lines.append("## Patch Summary")
     lines.append("")
     lines.append(state.patch_summary or "pending")

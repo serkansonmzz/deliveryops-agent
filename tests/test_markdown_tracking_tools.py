@@ -124,3 +124,21 @@ def test_delivery_markdown_contains_structured_implementation_plan():
     assert "`README.md`" in markdown
     assert "#### Step 1: Update docs" in markdown
     assert "### Legacy Flat Plan" in markdown
+
+
+def test_delivery_markdown_contains_dev_agent_context():
+    state = DeliveryState(
+        request_id="req_test",
+        repo_path="/tmp/repo",
+        original_request="Update README docs.",
+        dev_context_status="prepared",
+        dev_context_selected_files=["README.md"],
+        dev_context_related_tests=["tests/test_readme.py"],
+    )
+
+    markdown = render_delivery_markdown(state)
+
+    assert "## Dev Agent Context" in markdown
+    assert "Status: `prepared`" in markdown
+    assert "`README.md`" in markdown
+    assert "`tests/test_readme.py`" in markdown

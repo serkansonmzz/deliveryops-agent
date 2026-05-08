@@ -93,6 +93,10 @@ class DeliveryState(BaseModel):
     patch_affected_files: list[str] = Field(default_factory=list)
     proposed_changes: list[str] = Field(default_factory=list)
     patch_risk_level: str | None = None
+    dev_context_selected_files: list[str] = Field(default_factory=list)
+    dev_context_related_tests: list[str] = Field(default_factory=list)
+    dev_context_risky_files: list[str] = Field(default_factory=list)
+    dev_context_status: str | None = None
     implementation_plan: list[str] = Field(default_factory=list)
     implementation_plan_summary: str | None = None
     implementation_plan_source: str | None = None

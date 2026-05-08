@@ -420,6 +420,22 @@ The plan includes:
 
 If an LLM is unavailable or returns unusable output, DeliveryOps uses a deterministic fallback plan.
 
+## Dev Agent Context Contract
+
+DeliveryOps prepares a structured `DevPatchContext` before Dev Agent patch generation.
+
+The context includes:
+
+- selected target files
+- related tests
+- architecture risks and notes
+- implementation plan steps
+- allowed target files
+- blocked file patterns
+- patch generation rules
+
+The Dev Agent receives curated context instead of a broad repository dump. Secret, credential, environment, binary, and oversized files are blocked or truncated before they can enter the prompt.
+
 ## Docs
 
 - `docs/MVP_RELEASE_CANDIDATE.md`

@@ -97,3 +97,36 @@ Planner plans.
 Dev Agent proposes patches.
 Apply Patch tool applies approved changes.
 ```
+
+## Phase 45: Dev Agent Context Contract Upgrade
+
+Phase 45 introduces a structured `DevPatchContext` before Dev Agent patch generation.
+
+The flow is:
+
+```text
+FeatureRequest
++ IssueSpec
++ RepoAnalysis
++ ArchitectureReview
++ ImplementationPlan
++ selected file contents
++ related tests
++ policy constraints
++ patch rules
+→ DevPatchContext
+→ Dev Agent
+→ AgentPatchResponse
+```
+
+The context contract includes:
+
+- selected repository files with reasons
+- related test files
+- architecture and implementation planning notes
+- risky files
+- allowed target files
+- blocked secret/environment patterns
+- explicit patch rules
+
+The Dev Agent still only proposes a patch. It does not apply patches, commit, push, create pull requests, or bypass approval gates.
