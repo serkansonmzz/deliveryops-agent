@@ -5,6 +5,7 @@ from agno.agent import Agent
 
 from app.schemas.agent_patch_response import AgentPatchResponse
 from app.schemas.delivery_state import DeliveryState
+from app.state_store import save_state
 from app.tools.diff_tools import write_generated_patch
 from app.tools.repo_context_tools import collect_repo_context
 from app.tools.patch_sanitizer_tools import sanitize_agent_patch_output
@@ -30,6 +31,21 @@ Your job:
 
 
 def build_agent_patch_prompt(context: dict) -> str:
+    dev_patch_context = context.get("dev_patch_context")
+    if dev_patch_context:
+        return f"""
+Generate a minimal unified diff patch using the following DevPatchContext.
+
+{dev_patch_context}
+
+Important:
+- Follow the patch rules exactly.
+- Only modify files that are relevant to the implementation plan.
+- Do not modify blocked files, secrets, credentials, or environment files.
+- Do not invent files unless the implementation plan clearly requires it.
+- If there is not enough context, return an empty unified_diff and explain why in rationale.
+"""
+
     return f"""
 Generate a unified diff patch for this request.
 
@@ -62,6 +78,7 @@ def generate_patch_with_agent(repo_path: Path, state: DeliveryState) -> Path | N
         raise RuntimeError("OPENAI_API_KEY is not set.")
 
     context = collect_repo_context(repo_path, state)
+    save_state(state)
 
     agent = Agent(
         model="openai:gpt-5",
