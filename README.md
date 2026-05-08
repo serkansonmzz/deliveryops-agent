@@ -116,6 +116,7 @@ request
 - `deliveryops run --repo . --github-owner YOUR_USER --github-repo YOUR_REPO --request "..."` starts a full delivery workflow.
 - `deliveryops continue --repo .` shows the next recommended workflow step.
 - `deliveryops architecture-review --repo .` runs an Architecture Council review and updates local tracking.
+- `deliveryops implementation-plan --repo .` generates a structured implementation plan and updates local tracking.
 - `deliveryops approval-status --repo .` shows the current pending approval request.
 - `deliveryops apply-patch --repo .` applies an already approved patch.
 - `deliveryops detect-tests --repo .` detects a safe test command.
@@ -398,6 +399,26 @@ The review uses repository analysis, likely files, risky files, source/test mapp
 - confidence score
 
 If an LLM is unavailable or returns unusable output, DeliveryOps uses a deterministic fallback review.
+
+## Implementation Planner Agent
+
+DeliveryOps can generate a structured implementation plan from feature, repository, and architecture context:
+
+```bash
+deliveryops implementation-plan --repo .
+```
+
+The plan includes:
+
+- actionable steps
+- target files
+- expected changes
+- test impact
+- risk level
+- acceptance criteria mapping
+- rollback notes
+
+If an LLM is unavailable or returns unusable output, DeliveryOps uses a deterministic fallback plan.
 
 ## Docs
 

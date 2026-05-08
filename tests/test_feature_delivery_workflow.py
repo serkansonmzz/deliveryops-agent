@@ -61,3 +61,32 @@ def test_workflow_does_not_auto_run_llm_patch_generation(tmp_path: Path, monkeyp
     assert decision.requires_approval is False
     assert workflow.can_auto_run_next_step() is False
     assert any("manual trigger" in warning for warning in decision.warnings)
+
+
+def test_workflow_does_not_auto_run_implementation_plan(tmp_path: Path, monkeypatch):
+    state = DeliveryState(
+        request_id="req_test",
+        repo_path=str(tmp_path),
+        original_request="Test planner action gate",
+    )
+
+    class FakeDecision:
+        status = "ready"
+        next_action = "implementation_plan"
+        next_command = "uv run deliveryops implementation-plan --repo ."
+        reason = "Generate a structured implementation plan."
+        safe_to_run = True
+        notes = []
+
+    monkeypatch.setattr(
+        "app.workflows.feature_delivery_workflow.determine_next_workflow_step",
+        lambda repo_path, state: FakeDecision(),
+    )
+
+    workflow = FeatureDeliveryWorkflow(tmp_path, state)
+    decision = workflow.determine_next_step()
+
+    assert decision.safe_to_run is False
+    assert decision.requires_approval is False
+    assert workflow.can_auto_run_next_step() is False
+    assert any("manual trigger" in warning for warning in decision.warnings)
