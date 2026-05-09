@@ -341,6 +341,9 @@ def render_delivery_markdown(state: DeliveryState) -> str:
     lines.append("## Dev Agent Context")
     lines.append("")
     lines.append(f"- Status: `{state.dev_context_status or 'pending'}`")
+    lines.append(
+        f"- Patch Generation Blocked Reason: `{state.patch_generation_blocked_reason or 'none'}`"
+    )
     lines.append("")
     lines.append("### Selected Files")
     lines.append("")

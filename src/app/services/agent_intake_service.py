@@ -5,6 +5,7 @@ from agno.agent import Agent
 from app.agents.agent_definitions import get_agent_definition
 from app.agents.factory import build_agno_agent
 from app.schemas.feature_request import FeatureRequest
+from app.tools.agent_runtime_tools import run_agent_with_timeout
 
 
 def can_use_llm() -> bool:
@@ -37,7 +38,7 @@ def run_intake_agent(
     try:
         definition = get_agent_definition("intake_agent")
         agent: Agent = build_agno_agent(definition)
-        response = agent.run(build_intake_prompt(raw_request, repo_path))
+        response = run_agent_with_timeout(agent, build_intake_prompt(raw_request, repo_path))
         content = response.content
 
         if isinstance(content, FeatureRequest):

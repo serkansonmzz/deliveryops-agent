@@ -274,6 +274,16 @@ def register_workflow_commands(app: typer.Typer) -> None:
         github_owner: str | None = typer.Option(None, help="GitHub repository owner."),
         github_repo: str | None = typer.Option(None, help="GitHub repository name."),
         request: str = typer.Option(..., help="Feature request to deliver."),
+        fast: bool = typer.Option(
+            False,
+            "--fast",
+            help="Use deterministic architecture/planning fallbacks for faster setup.",
+        ),
+        no_llm_planning: bool = typer.Option(
+            False,
+            "--no-llm-planning",
+            help="Use deterministic architecture/planning fallbacks.",
+        ),
     ):
         repo_path = resolve_repo_path(repo)
         ensure_git_repo(repo_path)
@@ -362,14 +372,20 @@ def register_workflow_commands(app: typer.Typer) -> None:
 
             architecture_review = run_with_heartbeat(
                 "Running architecture review with Architecture Council Agent",
-                lambda: build_architecture_review_for_state(state),
+                lambda: build_architecture_review_for_state(
+                    state,
+                    use_llm=False if fast or no_llm_planning else None,
+                ),
             )
             apply_architecture_review_to_state(state, architecture_review)
             console.print("[green]Architecture review completed.[/green]")
 
             implementation_plan = run_with_heartbeat(
                 "Generating implementation plan with Planner Agent",
-                lambda: build_implementation_plan_for_state(state),
+                lambda: build_implementation_plan_for_state(
+                    state,
+                    use_llm=False if fast or no_llm_planning else None,
+                ),
             )
             apply_implementation_plan_to_state(state, implementation_plan)
             console.print("[green]Implementation plan generated.[/green]")

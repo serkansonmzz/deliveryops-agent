@@ -74,7 +74,11 @@ def register_patch_commands(app: typer.Typer) -> None:
         try:
             patch_path = run_with_heartbeat(
                 "Generating and validating patch with Dev Agent",
-                lambda: generate_patch_with_agent(repo_path, state),
+                lambda: generate_patch_with_agent(
+                    repo_path,
+                    state,
+                    progress=lambda message: console.print(f"[cyan]{message}[/cyan]"),
+                ),
             )
         except RuntimeError as exc:
             state = load_state(repo_path)

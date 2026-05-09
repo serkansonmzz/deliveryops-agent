@@ -76,6 +76,33 @@ def test_build_final_report_avoids_double_numbered_plan_steps():
     assert "1. 1. Review context" not in report.body
 
 
+def test_build_final_report_includes_patch_generation_attempts():
+    state = DeliveryState(
+        request_id="req_test",
+        repo_path="/tmp/repo",
+        original_request="Generate patch",
+        dev_context_status="patch_generation_failed",
+        patch_generation_blocked_reason="blocked_by_invalid_patch",
+        last_error="corrupt patch at line 80",
+        patch_generation_attempts=[
+            {
+                "attempt": 1,
+                "mode": "unified_diff",
+                "status": "rejected",
+                "elapsed_seconds": 1.2,
+                "error": "corrupt patch at line 80",
+            }
+        ],
+    )
+
+    report = build_final_report(state)
+
+    assert "Patch Generation Notes" in report.body
+    assert "blocked_by_invalid_patch" in report.body
+    assert "Attempt `1`" in report.body
+    assert "corrupt patch at line 80" in report.body
+
+
 def test_write_final_report(tmp_path: Path):
     state = DeliveryState(
         request_id="req_test",

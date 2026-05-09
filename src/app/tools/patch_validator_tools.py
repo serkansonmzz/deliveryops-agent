@@ -49,12 +49,14 @@ def validate_patch_can_apply_or_raise(repo_path: Path, patch_text: str) -> None:
     try:
         run_git_apply_check(repo_path, candidate_path)
     except RuntimeError as exc:
+        error_text = str(exc)
         rejected_path.write_text(patch_text, encoding="utf-8")
-        error_path.write_text(str(exc), encoding="utf-8")
+        error_path.write_text(error_text, encoding="utf-8")
         raise RuntimeError(
             "Agent patch failed `git apply --check`. "
             "The patch was saved to `.deliveryops/rejected.patch` "
-            "and the validation error was saved to `.deliveryops/patch_validation_error.txt`."
+            "and the validation error was saved to `.deliveryops/patch_validation_error.txt`.\n"
+            f"{error_text}"
         ) from exc
     finally:
         if candidate_path.exists():

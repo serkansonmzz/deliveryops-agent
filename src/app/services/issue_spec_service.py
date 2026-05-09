@@ -6,6 +6,7 @@ from app.agents.agent_definitions import get_agent_definition
 from app.agents.factory import build_agno_agent
 from app.schemas.feature_request import FeatureRequest
 from app.schemas.issue_spec import IssueSpec
+from app.tools.agent_runtime_tools import run_agent_with_timeout
 from app.tools.issue_body_tools import ensure_issue_spec_has_body
 
 
@@ -55,7 +56,7 @@ def run_product_owner_agent(
     try:
         definition = get_agent_definition("product_owner_agent")
         agent: Agent = build_agno_agent(definition)
-        response = agent.run(build_product_owner_prompt(feature_request))
+        response = run_agent_with_timeout(agent, build_product_owner_prompt(feature_request))
         content = response.content
 
         if isinstance(content, IssueSpec):

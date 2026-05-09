@@ -4,7 +4,7 @@ from app.schemas.delivery_state import DeliveryState
 from app.schemas.dev_patch_context import DevContextFile, DevPatchContext
 
 
-MAX_FILE_BYTES = 20_000
+MAX_FILE_BYTES = 12_000
 
 BLOCKED_FILE_PATTERNS = [
     ".env",
@@ -190,7 +190,10 @@ def build_dev_patch_context(repo_path: Path, state: DeliveryState) -> DevPatchCo
         allowed_target_files=allowed_target_files,
         blocked_file_patterns=BLOCKED_FILE_PATTERNS,
         patch_rules=[
-            "Return only a valid unified diff patch in the unified_diff field.",
+            "Prefer structured file_edits over raw unified_diff.",
+            "Use file_edits with create_file, replace_text, append_after, or append_to_file when possible.",
+            "Use exact anchors from selected file content for replace_text and append_after.",
+            "Use unified_diff only as a fallback for changes that cannot be expressed as file_edits.",
             "Do not include markdown fences around the diff.",
             "Keep the patch minimal and focused.",
             "Only modify files that are relevant to the implementation plan.",

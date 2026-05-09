@@ -3,7 +3,7 @@ import subprocess
 
 import pytest
 
-from app.schemas.agent_patch_response import AgentPatchResponse
+from app.schemas.agent_patch_response import AgentPatchResponse, FileEditIntent
 from app.schemas.delivery_state import DeliveryState
 from app.tools import agent_patch_tools
 from app.tools.agent_patch_tools import build_agent_patch_prompt, generate_patch_with_agent
@@ -115,6 +115,46 @@ def test_generate_patch_with_agent_retries_invalid_patch(monkeypatch, tmp_path: 
     assert state.dev_context_status == "patch_generated"
 
 
+def test_generate_patch_with_agent_prefers_file_edits(monkeypatch, tmp_path: Path):
+    init_git_repo(tmp_path)
+    (tmp_path / "README.md").write_text("# Demo\n", encoding="utf-8")
+    subprocess.run(["git", "add", "README.md"], cwd=tmp_path, check=True)
+    subprocess.run(["git", "commit", "-m", "chore: initial"], cwd=tmp_path, check=True)
+
+    response = AgentPatchResponse(
+        summary="good",
+        target_files=["README.md"],
+        file_edits=[
+            FileEditIntent(
+                path="README.md",
+                edit_type="append_to_file",
+                content="Updated.\n",
+            )
+        ],
+        unified_diff="not a patch",
+        generation_mode="file_edits",
+        rationale="good",
+    )
+    FakeAgent.prompts = []
+    FakeAgent.responses = [response]
+    monkeypatch.setenv("OPENAI_API_KEY", "test")
+    monkeypatch.setattr(agent_patch_tools, "Agent", FakeAgent)
+
+    state = DeliveryState(
+        request_id="req_test",
+        repo_path=str(tmp_path),
+        original_request="Update README.",
+        likely_files=["README.md"],
+    )
+
+    patch_path = generate_patch_with_agent(tmp_path, state)
+
+    assert patch_path.name == "generated.patch"
+    assert "Updated." in patch_path.read_text(encoding="utf-8")
+    assert state.patch_generation_attempts[0]["mode"] == "file_edits"
+    assert state.dev_context_status == "patch_generated"
+
+
 def test_generate_patch_with_agent_records_failure_after_retries(
     monkeypatch,
     tmp_path: Path,
@@ -146,5 +186,7 @@ def test_generate_patch_with_agent_records_failure_after_retries(
         generate_patch_with_agent(tmp_path, state)
 
     assert state.dev_context_status == "patch_generation_failed"
+    assert state.pending_approval is False
+    assert state.patch_generation_blocked_reason == "blocked_by_invalid_patch"
     assert (tmp_path / ".deliveryops" / "rejected.patch").exists()
     assert (tmp_path / ".deliveryops" / "patch_validation_error.txt").exists()
