@@ -2,7 +2,7 @@ import json
 import subprocess
 from pathlib import Path
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class GitHubCommandResult(BaseModel):
@@ -16,6 +16,8 @@ class GitHubIssue(BaseModel):
     number: int
     url: str
     title: str
+    labels: list[str] = Field(default_factory=list)
+    skipped_labels: list[str] = Field(default_factory=list)
 
 
 def run_gh(args: list[str], cwd: Path | None = None) -> GitHubCommandResult:
@@ -56,6 +58,61 @@ def ensure_gh_authenticated() -> None:
         raise RuntimeError("GitHub CLI is not authenticated. Run: gh auth login")
 
 
+def list_github_labels(owner: str, repo: str) -> list[str]:
+    ensure_gh_authenticated()
+
+    result = run_gh(
+        [
+            "label",
+            "list",
+            "--repo",
+            f"{owner}/{repo}",
+            "--limit",
+            "200",
+            "--json",
+            "name",
+        ]
+    )
+
+    if result.return_code != 0:
+        return []
+
+    try:
+        payload = json.loads(result.stdout)
+    except json.JSONDecodeError:
+        return []
+
+    if not isinstance(payload, list):
+        return []
+
+    labels: list[str] = []
+    for item in payload:
+        if isinstance(item, dict) and item.get("name"):
+            labels.append(str(item["name"]))
+
+    return labels
+
+
+def filter_existing_labels(
+    owner: str,
+    repo: str,
+    labels: list[str] | None,
+) -> tuple[list[str], list[str]]:
+    requested = [label.strip() for label in labels or [] if label.strip()]
+
+    if not requested:
+        return [], []
+
+    existing = set(list_github_labels(owner, repo))
+
+    if not existing:
+        return [], requested
+
+    allowed = [label for label in requested if label in existing]
+    skipped = [label for label in requested if label not in existing]
+    return allowed, skipped
+
+
 def create_github_issue(
     owner: str,
     repo: str,
@@ -78,8 +135,10 @@ def create_github_issue(
         body,
     ]
 
-    if labels:
-        for label in labels:
+    existing_labels, skipped_labels = filter_existing_labels(owner, repo, labels)
+
+    if existing_labels:
+        for label in existing_labels:
             args.extend(["--label", label])
 
     result = run_gh(args)
@@ -94,6 +153,8 @@ def create_github_issue(
         number=number,
         url=url,
         title=title,
+        labels=existing_labels,
+        skipped_labels=skipped_labels,
     )
 
 

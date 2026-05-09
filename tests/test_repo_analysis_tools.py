@@ -70,6 +70,19 @@ def test_detect_risky_files():
     assert "deploy/prod.yml" in risky
 
 
+def test_detect_risky_files_flags_runtime_cache_files():
+    files = [
+        ".DS_Store",
+        "src/app/__pycache__/main.cpython-312.pyc",
+        "src/app/main.py",
+    ]
+
+    risky = detect_risky_files(files)
+
+    assert ".DS_Store" in risky
+    assert "src/app/__pycache__/main.cpython-312.pyc" in risky
+
+
 def test_rank_likely_files_for_readme_request():
     files = [
         "README.md",

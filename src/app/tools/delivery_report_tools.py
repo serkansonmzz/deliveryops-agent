@@ -2,6 +2,35 @@ from pathlib import Path
 
 from app.schemas.delivery_state import DeliveryState
 from app.schemas.final_report import FinalReport
+from app.tools.commit_tools import filter_commit_files
+
+
+def _format_plan_step(index: int, step: str) -> str:
+    stripped = step.strip()
+    prefix = f"{index}. "
+    if stripped.startswith(prefix):
+        return stripped
+    return f"{index}. {stripped}"
+
+
+def _workflow_summary(state: DeliveryState) -> str:
+    outcomes: list[str] = []
+
+    if "apply_patch" in state.completed_steps:
+        outcomes.append("patch applied")
+    if state.test_status == "passed":
+        outcomes.append("tests passed")
+    if state.commit_hash:
+        outcomes.append("commit created")
+    if state.push_status == "pushed":
+        outcomes.append("branch pushed")
+    if state.pr_url:
+        outcomes.append("draft PR opened")
+
+    if outcomes:
+        return "DeliveryOps completed: " + ", ".join(outcomes) + "."
+
+    return state.patch_summary or "DeliveryOps workflow completed."
 
 
 def build_progress_comment(state: DeliveryState) -> str:
@@ -50,7 +79,7 @@ def build_progress_comment(state: DeliveryState) -> str:
 
 
 def build_final_report(state: DeliveryState) -> FinalReport:
-    changed_files = state.committed_files or state.changed_files
+    changed_files = filter_commit_files(state.committed_files or state.changed_files)
 
     lines: list[str] = []
 
@@ -58,7 +87,7 @@ def build_final_report(state: DeliveryState) -> FinalReport:
     lines.append("")
     lines.append("## Summary")
     lines.append("")
-    lines.append(state.patch_summary or "DeliveryOps workflow completed.")
+    lines.append(_workflow_summary(state))
     lines.append("")
 
     lines.append("## Request")
@@ -85,7 +114,7 @@ def build_final_report(state: DeliveryState) -> FinalReport:
 
     if state.implementation_plan:
         for index, step in enumerate(state.implementation_plan, start=1):
-            lines.append(f"{index}. {step}")
+            lines.append(_format_plan_step(index, step))
     else:
         lines.append("not available")
 
@@ -113,6 +142,46 @@ def build_final_report(state: DeliveryState) -> FinalReport:
     lines.append(f"- Title: `{state.pr_title or 'not available'}`")
     lines.append(f"- URL: {state.pr_url or 'not available'}")
     lines.append(f"- Status: `{state.pr_status or 'not available'}`")
+    lines.append("")
+
+    lines.append("## Validation")
+    lines.append("")
+    lines.append(f"- Test Command: `{state.test_command or 'not available'}`")
+    lines.append(f"- Test Status: `{state.test_status or 'not available'}`")
+    lines.append(
+        f"- Test Exit Code: `{state.test_exit_code if state.test_exit_code is not None else 'not available'}`"
+    )
+    lines.append(f"- CI Status: `{state.ci_status or 'not available'}`")
+    lines.append(f"- CI Summary: {state.ci_summary or 'not available'}")
+    lines.append(f"- Readiness Status: `{state.readiness_status or 'not available'}`")
+    lines.append(f"- Readiness Risk: `{state.readiness_risk_level or 'not available'}`")
+    lines.append("")
+
+    lines.append("## Dev Agent Context")
+    lines.append("")
+    lines.append("### Selected Files")
+    if state.dev_context_selected_files:
+        for file_path in state.dev_context_selected_files:
+            lines.append(f"- `{file_path}`")
+    else:
+        lines.append("- not available")
+    lines.append("")
+    lines.append("### Related Tests")
+    if state.dev_context_related_tests:
+        for file_path in state.dev_context_related_tests:
+            lines.append(f"- `{file_path}`")
+    else:
+        lines.append("- not available")
+    lines.append("")
+
+    lines.append("## Warnings")
+    lines.append("")
+    warnings = state.readiness_warnings or state.policy_warnings
+    if warnings:
+        for warning in warnings:
+            lines.append(f"- {warning}")
+    else:
+        lines.append("- none")
     lines.append("")
 
     lines.append("## Completed Steps")

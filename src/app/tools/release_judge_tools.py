@@ -2,6 +2,7 @@ from pathlib import Path
 
 from app.schemas.delivery_state import DeliveryState
 from app.schemas.release_readiness import ReleaseReadinessResult
+from app.tools.commit_tools import filter_commit_files
 from app.tools.patch_file_tools import get_changed_files
 
 
@@ -63,7 +64,7 @@ def evaluate_release_readiness(repo_path: Path, state: DeliveryState) -> Release
     blockers: list[str] = []
     warnings: list[str] = []
 
-    changed_files = get_changed_files(repo_path)
+    changed_files = filter_commit_files(get_changed_files(repo_path))
 
     if not state.original_request.strip():
         blockers.append("Original request is missing.")

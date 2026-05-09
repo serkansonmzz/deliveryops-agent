@@ -140,6 +140,15 @@ def parse_pr_checks_output(raw_output: str) -> CIStatusResult:
             raw_output=raw_output,
         )
 
+    lowered_output = raw_output.lower()
+    if "no checks reported" in lowered_output or "no checks were found" in lowered_output:
+        return CIStatusResult(
+            status="no_checks",
+            summary="No GitHub checks are configured or reported for this pull request.",
+            checks=[],
+            raw_output=raw_output,
+        )
+
     checks: list[CICheckResult] = []
     failed: list[str] = []
     pending: list[str] = []

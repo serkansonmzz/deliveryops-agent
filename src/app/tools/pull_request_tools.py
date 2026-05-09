@@ -2,6 +2,7 @@ from pathlib import Path
 
 from app.schemas.delivery_state import DeliveryState
 from app.schemas.pull_request_result import PullRequestResult
+from app.tools.commit_tools import filter_commit_files
 from app.tools.git_tools import get_current_branch
 from app.tools.github_tools import ensure_gh_authenticated, run_gh
 
@@ -52,7 +53,7 @@ def build_pull_request_body(state: DeliveryState) -> str:
     lines.append("## Changed Files")
     lines.append("")
 
-    files = state.committed_files or state.changed_files
+    files = filter_commit_files(state.committed_files or state.changed_files)
 
     if files:
         for file_path in files:
@@ -63,9 +64,16 @@ def build_pull_request_body(state: DeliveryState) -> str:
     lines.append("")
     lines.append("## Validation")
     lines.append("")
-    lines.append("- [ ] Tests reviewed")
-    lines.append("- [ ] Patch reviewed")
-    lines.append("- [ ] Ready for final review")
+    patch_checked = "x" if "apply_patch" in state.completed_steps else " "
+    tests_checked = "x" if state.test_status == "passed" else " "
+    readiness_checked = "x" if state.readiness_status == "ready" else " "
+    lines.append(f"- [{patch_checked}] Patch applied")
+    lines.append(f"- [{tests_checked}] Tests passed")
+    lines.append(f"- [{readiness_checked}] Ready for final review")
+    lines.append("")
+    lines.append("## Review Mode")
+    lines.append("")
+    lines.append("Draft PR for review.")
     lines.append("")
 
     return "\n".join(lines)

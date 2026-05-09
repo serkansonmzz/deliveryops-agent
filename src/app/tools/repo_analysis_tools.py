@@ -1,6 +1,7 @@
 from pathlib import Path
 
 from app.schemas.repo_analysis import FileSignal, RepoAnalysisResult
+from app.tools.commit_tools import is_runtime_or_cache_file
 
 
 IGNORED_DIRS = {
@@ -166,6 +167,8 @@ def detect_risky_files(files: list[str]) -> list[str]:
         lower = file_path.lower()
 
         if any(part in lower for part in RISKY_NAME_PARTS):
+            risky.append(file_path)
+        elif is_runtime_or_cache_file(file_path):
             risky.append(file_path)
 
     return risky
@@ -337,6 +340,12 @@ def analyze_repository(repo_path: Path, request: str) -> RepoAnalysisResult:
         f"{len(config_files)} config files. "
         f"Detected stack: {', '.join(detected_stack) if detected_stack else 'unknown'}."
     )
+    hygiene_files = [file_path for file_path in files if is_runtime_or_cache_file(file_path)]
+    if hygiene_files:
+        summary += (
+            " Repository hygiene warning: tracked runtime/cache files were detected "
+            f"({len(hygiene_files)})."
+        )
 
     return RepoAnalysisResult(
         detected_stack=detected_stack,

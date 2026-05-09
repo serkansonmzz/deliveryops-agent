@@ -65,6 +65,8 @@ def register_patch_commands(app: typer.Typer) -> None:
         repo_path = resolve_repo_path(repo)
         state = load_state(repo_path)
 
+        console.print("[cyan]Preparing Dev Agent context...[/cyan]")
+        console.print("[cyan]Generating patch with Dev Agent...[/cyan]")
         patch_path = generate_patch_with_agent(repo_path, state)
 
         if patch_path is None:
