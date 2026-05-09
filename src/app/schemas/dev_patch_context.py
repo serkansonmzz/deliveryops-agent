@@ -28,6 +28,7 @@ class DevPatchContext(BaseModel):
     selected_files: list[DevContextFile] = Field(default_factory=list)
     related_tests: list[str] = Field(default_factory=list)
     risky_files: list[str] = Field(default_factory=list)
+    planned_new_files: list[str] = Field(default_factory=list)
     allowed_target_files: list[str] = Field(default_factory=list)
     blocked_file_patterns: list[str] = Field(default_factory=list)
     patch_rules: list[str] = Field(default_factory=list)
@@ -107,6 +108,10 @@ class DevPatchContext(BaseModel):
                 "",
                 "## Related Tests",
                 "\n".join(f"- {item}" for item in self.related_tests) or "- none",
+                "",
+                "## Planned New Files",
+                "\n".join(f"- {item}" for item in self.planned_new_files)
+                or "- none",
                 "",
                 "## Risky Files",
                 "\n".join(f"- {item}" for item in self.risky_files) or "- none",

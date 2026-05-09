@@ -113,3 +113,21 @@ def test_build_dev_patch_context_reads_selected_files(tmp_path: Path):
     assert "README.md" in context.allowed_target_files
     assert "tests/test_readme.py" in context.related_tests
     assert "Do not modify secrets" in "\n".join(context.patch_rules)
+
+
+def test_build_dev_patch_context_tracks_planned_new_files(tmp_path: Path):
+    (tmp_path / "src").mkdir()
+    (tmp_path / "src" / "app.py").write_text("print('hello')\n", encoding="utf-8")
+    state = DeliveryState(
+        request_id="req_test",
+        repo_path=str(tmp_path),
+        original_request="Add CLI tests.",
+        implementation_plan_target_files=["src/app.py", "tests/test_cli.py"],
+        likely_files=["src/app.py", "tests/test_cli.py"],
+    )
+
+    context = build_dev_patch_context(tmp_path, state)
+
+    assert "tests/test_cli.py" in context.planned_new_files
+    assert "tests/test_cli.py" in context.allowed_target_files
+    assert "## Planned New Files" in context.as_prompt_text()

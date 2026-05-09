@@ -65,5 +65,6 @@ def test_dev_generate_patch_prints_progress(monkeypatch, tmp_path):
 
     assert result.exit_code == 0
     assert "Preparing Dev Agent context" in result.output
-    assert "Generating patch with Dev Agent" in result.output
+    assert "Working on Dev Agent patch generation" in result.output
+    assert "Generating and validating patch with Dev Agent" in result.output
     assert "Agent patch generated" in result.output

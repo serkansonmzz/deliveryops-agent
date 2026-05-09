@@ -40,6 +40,9 @@ def run_readiness_check(repo_path: Path) -> ServiceResult:
 def generate_final_report(repo_path: Path) -> ServiceResult:
     state = load_state(repo_path)
 
+    readiness = evaluate_release_readiness(repo_path, state)
+    apply_readiness_result_to_state(state, readiness)
+
     report = build_final_report(state)
     report_path = write_final_report(repo_path, report)
 

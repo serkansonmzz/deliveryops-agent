@@ -350,6 +350,14 @@ def render_delivery_markdown(state: DeliveryState) -> str:
     else:
         lines.append("- pending")
     lines.append("")
+    lines.append("### Planned New Files")
+    lines.append("")
+    if state.dev_context_planned_new_files:
+        for file_path in state.dev_context_planned_new_files:
+            lines.append(f"- `{file_path}`")
+    else:
+        lines.append("- pending")
+    lines.append("")
     lines.append("### Related Tests")
     lines.append("")
     if state.dev_context_related_tests:
@@ -508,12 +516,21 @@ def render_delivery_markdown(state: DeliveryState) -> str:
 
     lines.append("## Test Failure Analysis")
     lines.append("")
-    lines.append(f"- Category: `{state.test_failure_category or 'pending'}`")
-    lines.append(f"- Risk Level: `{state.test_failure_risk_level or 'pending'}`")
+    failure_resolved = state.test_status == "passed" and not state.test_failure_category
+    lines.append(
+        f"- Category: `{'resolved' if failure_resolved else state.test_failure_category or 'pending'}`"
+    )
+    lines.append(
+        f"- Risk Level: `{'none' if failure_resolved else state.test_failure_risk_level or 'pending'}`"
+    )
     lines.append("")
     lines.append("### Failure Summary")
     lines.append("")
-    lines.append(state.test_failure_analysis_summary or "pending")
+    lines.append(
+        "Previous test failure has been cleared by a passing test run."
+        if failure_resolved
+        else state.test_failure_analysis_summary or "pending"
+    )
     lines.append("")
     lines.append("### Likely Causes")
     lines.append("")

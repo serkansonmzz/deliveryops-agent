@@ -53,3 +53,18 @@ def test_collect_repo_context_includes_related_tests(tmp_path: Path):
     assert "src/app.py" in paths
     assert "tests/test_app.py" in paths
     assert state.dev_context_related_tests == ["tests/test_app.py"]
+
+
+def test_collect_repo_context_tracks_planned_new_files(tmp_path: Path):
+    (tmp_path / "README.md").write_text("# Demo\n", encoding="utf-8")
+    state = DeliveryState(
+        request_id="req_test",
+        repo_path=str(tmp_path),
+        original_request="Add CLI.",
+        implementation_plan_target_files=["README.md", "src/trial_app/__main__.py"],
+    )
+
+    context = collect_repo_context(tmp_path, state)
+
+    assert "src/trial_app/__main__.py" in state.dev_context_planned_new_files
+    assert "src/trial_app/__main__.py" in context["dev_patch_context"]

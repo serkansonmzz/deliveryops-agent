@@ -78,6 +78,13 @@ def run_tests(repo_path: Path) -> ServiceResult:
     state.test_summary = result.summary
     state.mark_completed("run_tests")
 
+    if result.status == "passed":
+        state.test_failure_category = None
+        state.test_failure_analysis_summary = None
+        state.test_failure_likely_causes = []
+        state.test_failure_next_actions = []
+        state.test_failure_risk_level = None
+
     save_state(state)
     update_delivery_markdown(state)
 

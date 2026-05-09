@@ -66,8 +66,19 @@ def build_subject_text(request: str, changed_files: list[str]) -> str:
     request_lower = request.lower()
     files_text = " ".join(changed_files).lower()
 
+    if "calculator" in request_lower and (
+        "cli" in request_lower or "command-line interface" in request_lower
+    ):
+        return "add calculator CLI"
+
     if "subtract" in request_lower and "calculator" in request_lower:
         return "add calculator subtraction support"
+
+    if "multiply" in request_lower and "calculator" in request_lower:
+        return "add calculator multiplication support"
+
+    if "command-line interface" in request_lower:
+        return "add command-line interface"
 
     if "add" in request_lower and "function" in request_lower:
         for file_path in changed_files:
@@ -123,7 +134,10 @@ def build_commit_message_spec(repo_path: Path, state: DeliveryState) -> CommitMe
     subject = f"{commit_type}: {subject_text}"
 
     if len(subject) > 72:
-        subject = subject[:72].rstrip(" .,;:-")
+        truncated = subject[:72].rstrip(" .,;:-")
+        if " " in truncated:
+            truncated = truncated.rsplit(" ", 1)[0]
+        subject = truncated.rstrip(" .,;:-")
 
     diff_summary = summarize_diff(diff_text, changed_files)
 

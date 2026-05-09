@@ -32,6 +32,33 @@ E   AssertionError: assert 1 == 2
     assert classify_test_failure(output) == "assertion_failure"
 
 
+def test_classify_python_path_subprocess_import_error():
+    output = (
+        "/repo/.venv/bin/python: No module named trial_app\n"
+        "CompletedProcess(args=['/repo/.venv/bin/python', '-m', 'trial_app'])"
+    )
+
+    assert classify_test_failure(output) == "python_path_or_package_import_error"
+
+
+def test_analyze_python_path_subprocess_import_error():
+    state = DeliveryState(
+        request_id="req_test",
+        repo_path="/tmp/repo",
+        original_request="Add CLI tests.",
+        test_status="failed",
+        test_output=(
+            "/repo/.venv/bin/python: No module named trial_app\n"
+            "CompletedProcess(args=['/repo/.venv/bin/python', '-m', 'trial_app'])"
+        ),
+    )
+
+    analysis = analyze_test_failure(state)
+
+    assert analysis.category == "python_path_or_package_import_error"
+    assert any("PYTHONPATH=src" in action for action in analysis.next_actions)
+
+
 def test_analyze_test_failure_from_state():
     state = DeliveryState(
         request_id="req_test",
