@@ -113,3 +113,25 @@ def test_apply_readiness_result_to_state(tmp_path: Path):
     assert state.readiness_status == result.status
     assert state.readiness_risk_level == result.risk_level
     assert "release_readiness_check" in state.completed_steps
+
+
+def test_readiness_does_not_warn_missing_commit_message_when_present(tmp_path: Path):
+    init_git_repo(tmp_path)
+
+    state = DeliveryState(
+        request_id="req_test",
+        repo_path=str(tmp_path),
+        original_request="Add readiness check",
+        github_issue_url="https://github.com/test/repo/issues/1",
+        branch_name="feature/readiness-check",
+        test_status="passed",
+        commit_message="feat: add readiness check",
+    )
+    state.mark_completed("apply_patch")
+    state.mark_completed("detect_tests")
+    state.mark_completed("run_tests")
+    state.mark_completed("generate_commit_message")
+
+    result = evaluate_release_readiness(tmp_path, state)
+
+    assert "Commit message has not been generated yet." not in result.warnings

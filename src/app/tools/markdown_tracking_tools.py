@@ -13,7 +13,7 @@ CHECKLIST_STEPS = [
     ("prepare_patch", "Prepare patch"),
     ("request_patch_approval", "Request approval to apply patch"),
     ("apply_patch", "Apply patch"),
-    ("detect_test_command", "Detect test command"),
+    ("detect_tests", "Detect test command"),
     ("run_tests", "Run tests"),
     ("generate_commit_message", "Generate commit message"),
     ("request_commit_approval", "Request approval for commit"),
@@ -22,8 +22,8 @@ CHECKLIST_STEPS = [
     ("push_branch", "Push branch"),
     ("request_pr_approval", "Request approval for draft PR"),
     ("open_draft_pr", "Open draft PR"),
-    ("update_github_issue", "Update GitHub issue"),
-    ("produce_final_report", "Produce final delivery report"),
+    ("comment_progress", "Post progress comment"),
+    ("generate_final_report", "Produce final delivery report"),
 ]
 
 
@@ -89,9 +89,19 @@ def render_delivery_markdown(state: DeliveryState) -> str:
         lines.append("- pending")
     lines.append("")
 
-    lines.append("## Pending Approval Request")
+    approval_heading = (
+        "## Pending Approval Request"
+        if state.pending_approval and state.pending_action
+        else "## Last Approval Request"
+    )
+    lines.append(approval_heading)
     lines.append("")
-    lines.append(f"- Action: `{state.approval_request_action or state.pending_action or 'pending'}`")
+    action_text = (
+        state.pending_action
+        if state.pending_approval and state.pending_action
+        else state.approval_request_action or "none"
+    )
+    lines.append(f"- Action: `{action_text}`")
     lines.append(f"- Risk Level: `{state.approval_request_risk_level or 'pending'}`")
     lines.append("")
     lines.append("### Reason")

@@ -54,14 +54,27 @@ def test_build_pull_request_body_contains_tracking_info():
         original_request="Add draft PR support",
         github_issue_url="https://github.com/test/repo/issues/1",
         commit_hash="abc1234",
-        committed_files=["src/app/main.py"],
+        committed_files=[
+            "src/app/main.py",
+            ".deliveryops/state.json",
+            ".DS_Store",
+        ],
+        test_status="passed",
+        readiness_status="ready",
     )
+    state.mark_completed("apply_patch")
 
     body = build_pull_request_body(state)
 
     assert "Add draft PR support" in body
     assert "abc1234" in body
     assert "src/app/main.py" in body
+    assert ".deliveryops" not in body
+    assert ".DS_Store" not in body
+    assert "- [x] Patch applied" in body
+    assert "- [x] Tests passed" in body
+    assert "- [x] Ready for final review" in body
+    assert "Draft PR for review." in body
 
 
 def test_create_draft_pull_request(monkeypatch, tmp_path: Path):

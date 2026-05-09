@@ -38,7 +38,17 @@ def test_build_final_report():
         commit_hash="abc1234",
         committed_files=["src/app/main.py"],
         commit_message="feat: add final report support",
+        test_command="uv run pytest -q",
+        test_status="passed",
+        test_exit_code=0,
+        ci_status="no_checks",
+        ci_summary="No GitHub checks are configured.",
+        readiness_status="ready",
+        readiness_risk_level="low",
+        dev_context_selected_files=["src/app/main.py"],
+        dev_context_related_tests=["tests/test_main.py"],
     )
+    state.mark_completed("apply_patch")
 
     report = build_final_report(state)
 
@@ -46,6 +56,24 @@ def test_build_final_report():
     assert "Add final report support" in report.body
     assert "abc1234" in report.body
     assert "src/app/main.py" in report.body
+    assert "Test Status: `passed`" in report.body
+    assert "CI Status: `no_checks`" in report.body
+    assert "Readiness Status: `ready`" in report.body
+    assert "tests/test_main.py" in report.body
+
+
+def test_build_final_report_avoids_double_numbered_plan_steps():
+    state = DeliveryState(
+        request_id="req_test",
+        repo_path="/tmp/repo",
+        original_request="Add final report support",
+        implementation_plan=["1. Review context"],
+    )
+
+    report = build_final_report(state)
+
+    assert "1. Review context" in report.body
+    assert "1. 1. Review context" not in report.body
 
 
 def test_write_final_report(tmp_path: Path):

@@ -29,6 +29,41 @@ def test_delivery_markdown_marks_completed_steps():
     assert "- [x] Inspect repository" in markdown
 
 
+def test_delivery_markdown_uses_current_checklist_step_keys():
+    state = DeliveryState(
+        request_id="req_test",
+        repo_path="/tmp/repo",
+        original_request="Add healthcheck endpoint.",
+        completed_steps=[
+            "detect_tests",
+            "comment_progress",
+            "generate_final_report",
+        ],
+    )
+
+    markdown = render_delivery_markdown(state)
+
+    assert "- [x] Detect test command" in markdown
+    assert "- [x] Post progress comment" in markdown
+    assert "- [x] Produce final delivery report" in markdown
+
+
+def test_delivery_markdown_does_not_show_completed_approval_as_pending():
+    state = DeliveryState(
+        request_id="req_test",
+        repo_path="/tmp/repo",
+        original_request="Add healthcheck endpoint.",
+        approval_request_action="git_commit",
+        pending_approval=False,
+        pending_action=None,
+    )
+
+    markdown = render_delivery_markdown(state)
+
+    assert "## Last Approval Request" in markdown
+    assert "## Pending Approval Request" not in markdown
+
+
 def test_delivery_markdown_contains_structured_request_section():
     state = DeliveryState(
         request_id="req_test",

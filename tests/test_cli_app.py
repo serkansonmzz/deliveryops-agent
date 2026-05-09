@@ -1,6 +1,8 @@
 from typer.testing import CliRunner
 
+from app.cli import patch_commands
 from app.cli.app import app
+from app.schemas.delivery_state import DeliveryState
 
 
 runner = CliRunner()
@@ -37,3 +39,31 @@ def test_core_commands_are_registered():
 
     for command in expected_commands:
         assert command in result.output
+
+
+def test_dev_generate_patch_prints_progress(monkeypatch, tmp_path):
+    state = DeliveryState(
+        request_id="req_test",
+        repo_path=str(tmp_path),
+        original_request="Update README docs.",
+    )
+    patch_path = tmp_path / ".deliveryops" / "generated.patch"
+    patch_path.parent.mkdir()
+    patch_path.write_text("", encoding="utf-8")
+
+    monkeypatch.setattr(patch_commands, "resolve_repo_path", lambda repo: tmp_path)
+    monkeypatch.setattr(patch_commands, "load_state", lambda repo_path: state)
+    monkeypatch.setattr(
+        patch_commands,
+        "generate_patch_with_agent",
+        lambda repo_path, state: patch_path,
+    )
+    monkeypatch.setattr(patch_commands, "save_state", lambda state: None)
+    monkeypatch.setattr(patch_commands, "update_delivery_markdown", lambda state: None)
+
+    result = runner.invoke(app, ["dev-generate-patch", "--repo", str(tmp_path)])
+
+    assert result.exit_code == 0
+    assert "Preparing Dev Agent context" in result.output
+    assert "Generating patch with Dev Agent" in result.output
+    assert "Agent patch generated" in result.output

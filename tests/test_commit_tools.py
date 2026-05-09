@@ -21,6 +21,10 @@ def test_filter_commit_files_excludes_runtime_files():
         ".deliveryops/state.json",
         ".venv/pyvenv.cfg",
         ".pytest_cache/cache",
+        ".DS_Store",
+        "src/.DS_Store",
+        "src/app/__pycache__/main.cpython-312.pyc",
+        "tests/__pycache__/test_main.cpython-312-pytest.pyc",
     ]
 
     result = filter_commit_files(files)
@@ -30,6 +34,10 @@ def test_filter_commit_files_excludes_runtime_files():
     assert ".deliveryops/state.json" not in result
     assert ".venv/pyvenv.cfg" not in result
     assert ".pytest_cache/cache" not in result
+    assert ".DS_Store" not in result
+    assert "src/.DS_Store" not in result
+    assert "src/app/__pycache__/main.cpython-312.pyc" not in result
+    assert "tests/__pycache__/test_main.cpython-312-pytest.pyc" not in result
 
 
 def test_create_git_commit(tmp_path: Path):

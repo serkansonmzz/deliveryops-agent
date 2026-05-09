@@ -42,6 +42,59 @@ def test_create_github_issue(monkeypatch):
     assert issue.url.endswith("/issues/12")
 
 
+def test_create_github_issue_skips_missing_labels(monkeypatch):
+    seen_issue_args = []
+
+    def fake_run_gh(args, cwd=None):
+        if args == ["--version"]:
+            return GitHubCommandResult(
+                command=["gh", "--version"],
+                return_code=0,
+                stdout="gh version 2.x",
+                stderr="",
+            )
+
+        if args == ["auth", "status"]:
+            return GitHubCommandResult(
+                command=["gh", "auth", "status"],
+                return_code=0,
+                stdout="Logged in",
+                stderr="",
+            )
+
+        if args[:2] == ["label", "list"]:
+            return GitHubCommandResult(
+                command=["gh", *args],
+                return_code=0,
+                stdout='[{"name": "enhancement"}]',
+                stderr="",
+            )
+
+        seen_issue_args.extend(args)
+        return GitHubCommandResult(
+            command=["gh", *args],
+            return_code=0,
+            stdout="https://github.com/test-owner/test-repo/issues/12",
+            stderr="",
+        )
+
+    monkeypatch.setattr(github_tools, "run_gh", fake_run_gh)
+
+    issue = github_tools.create_github_issue(
+        owner="test-owner",
+        repo="test-repo",
+        title="Test issue",
+        body="Test body",
+        labels=["enhancement", "calculator"],
+    )
+
+    assert issue.labels == ["enhancement"]
+    assert issue.skipped_labels == ["calculator"]
+    assert "--label" in seen_issue_args
+    assert "enhancement" in seen_issue_args
+    assert "calculator" not in seen_issue_args
+
+
 def test_add_github_issue_comment(monkeypatch):
     def fake_run_gh(args, cwd=None):
         if args == ["--version"]:

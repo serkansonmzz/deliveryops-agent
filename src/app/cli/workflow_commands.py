@@ -288,10 +288,12 @@ def register_workflow_commands(app: typer.Typer) -> None:
         )
 
         ensure_workspace(repo_path)
+        console.print("[cyan]Workspace initialized.[/cyan]")
 
         state.mark_completed("inspect_repository")
         state.mark_completed("initialize_workspace")
 
+        console.print("[cyan]Analyzing repository...[/cyan]")
         repo_analysis = analyze_repository(repo_path, request)
         state.detected_stack = repo_analysis.detected_stack
         state.repo_analysis_summary = repo_analysis.summary
@@ -304,12 +306,15 @@ def register_workflow_commands(app: typer.Typer) -> None:
         if repo_analysis.likely_files:
             state.likely_files = [item.path for item in repo_analysis.likely_files]
         state.mark_completed("analyze_repository")
+        console.print("[green]Repository analysis completed.[/green]")
 
         if github_owner and github_repo:
+            console.print("[cyan]Analyzing feature request...[/cyan]")
             feature_request = run_intake_agent(
                 raw_request=request,
                 repo_path=str(repo_path),
             )
+            console.print("[cyan]Preparing GitHub issue spec...[/cyan]")
             issue_spec = run_product_owner_agent(feature_request)
 
             state.feature_request_title = feature_request.title
@@ -317,6 +322,7 @@ def register_workflow_commands(app: typer.Typer) -> None:
             state.issue_spec_title = issue_spec.title
             state.issue_spec_labels = issue_spec.labels
 
+            console.print("[cyan]Creating GitHub issue...[/cyan]")
             issue = create_github_issue(
                 owner=github_owner,
                 repo=github_repo,
@@ -324,26 +330,40 @@ def register_workflow_commands(app: typer.Typer) -> None:
                 body=issue_spec.body,
                 labels=issue_spec.labels,
             )
+            if issue.skipped_labels:
+                warning = (
+                    "Skipped missing GitHub issue labels: "
+                    + ", ".join(issue.skipped_labels)
+                )
+                state.policy_warnings.append(warning)
+                console.print(f"[yellow]{warning}[/yellow]")
 
             state.github_issue_number = issue.number
             state.github_issue_url = issue.url
             state.mark_completed("analyze_feature_request")
             state.mark_completed("create_github_issue")
+            console.print(f"[green]GitHub issue created:[/green] {issue.url}")
 
             branch_name = build_feature_branch_name(
                 issue_number=issue.number,
                 request=request,
             )
 
+            console.print(f"[cyan]Creating feature branch:[/cyan] {branch_name}")
             create_branch(repo_path, branch_name)
             state.branch_name = branch_name
             state.mark_completed("create_feature_branch")
+            console.print("[green]Feature branch created.[/green]")
 
+            console.print("[cyan]Running architecture review...[/cyan]")
             architecture_review = build_architecture_review_for_state(state)
             apply_architecture_review_to_state(state, architecture_review)
+            console.print("[green]Architecture review completed.[/green]")
 
+            console.print("[cyan]Generating implementation plan...[/cyan]")
             implementation_plan = build_implementation_plan_for_state(state)
             apply_implementation_plan_to_state(state, implementation_plan)
+            console.print("[green]Implementation plan generated.[/green]")
 
             patch_proposal = build_patch_proposal(
                 request=request,
@@ -361,6 +381,7 @@ def register_workflow_commands(app: typer.Typer) -> None:
 
             state.mark_completed("prepare_patch")
             state.mark_completed("request_patch_approval")
+            console.print("[green]Patch approval request prepared.[/green]")
         else:
             state.last_error = (
                 "GitHub owner/repo was not provided. "

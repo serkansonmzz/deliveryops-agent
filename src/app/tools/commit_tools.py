@@ -11,6 +11,32 @@ RUNTIME_PREFIXES = (
     "__pycache__/",
     ".pytest_cache/",
 )
+RUNTIME_FILE_NAMES = {
+    ".DS_Store",
+}
+RUNTIME_SUFFIXES = {
+    ".pyc",
+    ".pyo",
+}
+
+
+def is_runtime_or_cache_file(file_path: str) -> bool:
+    normalized = file_path.strip().replace("\\", "/")
+    path_parts = normalized.split("/")
+
+    if not normalized:
+        return True
+
+    if any(normalized.startswith(prefix) for prefix in RUNTIME_PREFIXES):
+        return True
+
+    if any(part in {"__pycache__", ".pytest_cache", ".venv"} for part in path_parts):
+        return True
+
+    if path_parts[-1] in RUNTIME_FILE_NAMES:
+        return True
+
+    return any(normalized.endswith(suffix) for suffix in RUNTIME_SUFFIXES)
 
 
 def filter_commit_files(files: list[str]) -> list[str]:
@@ -22,7 +48,7 @@ def filter_commit_files(files: list[str]) -> list[str]:
         if not normalized:
             continue
 
-        if any(normalized.startswith(prefix) for prefix in RUNTIME_PREFIXES):
+        if is_runtime_or_cache_file(normalized):
             continue
 
         filtered.append(normalized)

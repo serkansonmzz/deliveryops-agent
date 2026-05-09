@@ -47,6 +47,16 @@ tests queued
     assert len(result.checks) == 2
 
 
+def test_parse_pr_checks_output_no_checks_reported():
+    result = parse_pr_checks_output(
+        "no checks reported on the 'feature/test' branch"
+    )
+
+    assert result.status == "no_checks"
+    assert "No GitHub checks" in result.summary
+    assert result.checks == []
+
+
 def test_parse_pr_checks_output_no_checks():
     result = parse_pr_checks_output("")
 
