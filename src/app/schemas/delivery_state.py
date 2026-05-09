@@ -96,6 +96,7 @@ class DeliveryState(BaseModel):
     dev_context_selected_files: list[str] = Field(default_factory=list)
     dev_context_related_tests: list[str] = Field(default_factory=list)
     dev_context_risky_files: list[str] = Field(default_factory=list)
+    dev_context_planned_new_files: list[str] = Field(default_factory=list)
     dev_context_status: str | None = None
     implementation_plan: list[str] = Field(default_factory=list)
     implementation_plan_summary: str | None = None

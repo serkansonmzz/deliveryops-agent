@@ -157,6 +157,13 @@ def build_final_report(state: DeliveryState) -> FinalReport:
     lines.append(f"- Readiness Risk: `{state.readiness_risk_level or 'not available'}`")
     lines.append("")
 
+    if state.dev_context_status in {"patch_generation_failed", "patch_generation_retrying"} or state.last_error:
+        lines.append("## Patch Generation Notes")
+        lines.append("")
+        lines.append(f"- Dev Context Status: `{state.dev_context_status or 'not available'}`")
+        lines.append(f"- Last Error: {state.last_error or 'not available'}")
+        lines.append("")
+
     lines.append("## Dev Agent Context")
     lines.append("")
     lines.append("### Selected Files")

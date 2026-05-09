@@ -3,8 +3,9 @@ from pathlib import Path
 import typer
 
 from app.cli.common import console, resolve_repo_path
+from app.cli.heartbeat import run_with_heartbeat
 from app.state_store import load_state, save_state
-from app.tools.agent_patch_tools import generate_patch_with_agent
+from app.tools.agent_patch_tools import MAX_DEV_PATCH_ATTEMPTS, generate_patch_with_agent
 from app.tools.apply_patch_tools import apply_available_patch
 from app.tools.approval_request_tools import (
     apply_approval_request_to_state,
@@ -66,8 +67,23 @@ def register_patch_commands(app: typer.Typer) -> None:
         state = load_state(repo_path)
 
         console.print("[cyan]Preparing Dev Agent context...[/cyan]")
-        console.print("[cyan]Generating patch with Dev Agent...[/cyan]")
-        patch_path = generate_patch_with_agent(repo_path, state)
+        console.print(
+            f"[cyan]Working on Dev Agent patch generation "
+            f"(up to {MAX_DEV_PATCH_ATTEMPTS} attempts)...[/cyan]"
+        )
+        try:
+            patch_path = run_with_heartbeat(
+                "Generating and validating patch with Dev Agent",
+                lambda: generate_patch_with_agent(repo_path, state),
+            )
+        except RuntimeError as exc:
+            state = load_state(repo_path)
+            state.last_error = str(exc)
+            save_state(state)
+            update_delivery_markdown(state)
+            console.print("[red]Dev Agent patch generation failed.[/red]")
+            console.print(str(exc))
+            raise typer.Exit(code=1) from exc
 
         if patch_path is None:
             state.last_error = "Dev Agent could not generate a patch from the available context."

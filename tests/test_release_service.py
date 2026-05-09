@@ -39,6 +39,30 @@ def test_generate_final_report_service(tmp_path: Path):
     assert (tmp_path / ".deliveryops" / "FINAL_REPORT.md").exists()
 
 
+def test_generate_final_report_refreshes_readiness(tmp_path: Path):
+    init_git_repo(tmp_path)
+    state = make_state(
+        tmp_path,
+        test_status="passed",
+        readiness_status="blocked",
+        readiness_warnings=["stale warning"],
+    )
+
+    from app.state_store import load_state, save_state
+
+    state.mark_completed("apply_patch")
+    state.mark_completed("detect_tests")
+    state.mark_completed("run_tests")
+    save_state(state)
+
+    result = generate_final_report(tmp_path)
+    updated = load_state(tmp_path)
+
+    assert result.status == "generated"
+    assert updated.readiness_status != "blocked"
+    assert "stale warning" not in updated.readiness_warnings
+
+
 def test_generate_mvp_release_notes_service(tmp_path: Path):
     init_git_repo(tmp_path)
     make_state(tmp_path)

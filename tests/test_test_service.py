@@ -56,6 +56,36 @@ def test_run_tests_service_passes(tmp_path: Path):
     assert result.exit_code == 0
 
 
+def test_run_tests_service_clears_stale_failure_analysis(tmp_path: Path):
+    init_git_repo(tmp_path)
+    tests_dir = tmp_path / "tests"
+    tests_dir.mkdir()
+    (tests_dir / "test_sample.py").write_text(
+        "def test_sample():\n"
+        "    assert True\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "pyproject.toml").write_text("[project]\nname='x'\n", encoding="utf-8")
+
+    make_state(
+        tmp_path,
+        test_failure_category="assertion_failure",
+        test_failure_analysis_summary="Old failure.",
+        test_failure_likely_causes=["Old cause."],
+        test_failure_next_actions=["Old action."],
+        test_failure_risk_level="medium",
+    )
+
+    result = run_tests(tmp_path)
+
+    assert result.status == "passed"
+    from app.state_store import load_state
+
+    updated = load_state(tmp_path)
+    assert updated.test_failure_category is None
+    assert updated.test_failure_likely_causes == []
+
+
 def test_analyze_failed_tests_service_skips_without_failure(tmp_path: Path):
     init_git_repo(tmp_path)
     make_state(tmp_path, test_status="passed")

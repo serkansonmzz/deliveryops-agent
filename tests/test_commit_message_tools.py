@@ -139,3 +139,46 @@ def test_build_commit_message_spec_for_trial_feature(tmp_path: Path):
     assert spec.subject == "feat: add calculator subtraction support"
     assert ".deliveryops/state.json" not in spec.changed_files
     assert ".DS_Store" not in spec.changed_files
+
+
+def test_build_commit_message_spec_for_calculator_cli_feature(tmp_path: Path):
+    init_git_repo(tmp_path)
+
+    (tmp_path / "src" / "trial_app").mkdir(parents=True)
+    (tmp_path / "tests").mkdir()
+    (tmp_path / "src" / "trial_app" / "calculator.py").write_text(
+        "def add(a: int, b: int) -> int:\n    return a + b\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "README.md").write_text("# Demo\n", encoding="utf-8")
+
+    subprocess.run(["git", "add", "."], cwd=tmp_path, check=True)
+    subprocess.run(["git", "commit", "-m", "chore: initial commit"], cwd=tmp_path, check=True)
+
+    (tmp_path / "src" / "trial_app" / "calculator.py").write_text(
+        "def add(a: int, b: int) -> int:\n    return a + b\n\n"
+        "def multiply(a: int, b: int) -> int:\n    return a * b\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "src" / "trial_app" / "__main__.py").write_text(
+        "print('cli')\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "tests" / "test_cli.py").write_text(
+        "def test_cli():\n    assert True\n",
+        encoding="utf-8",
+    )
+
+    state = DeliveryState(
+        request_id="req_test",
+        repo_path=str(tmp_path),
+        original_request=(
+            "Add a calculator command-line interface that supports add and multiply "
+            "operations. Implement multiply in the calculator module, add CLI tests, "
+            "and document usage in README."
+        ),
+    )
+
+    spec = build_commit_message_spec(tmp_path, state)
+
+    assert spec.subject == "feat: add calculator CLI"

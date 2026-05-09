@@ -3,6 +3,7 @@ import uuid
 import typer
 
 from app.cli.common import console, resolve_repo_path
+from app.cli.heartbeat import run_with_heartbeat
 from app.schemas.delivery_state import DeliveryState
 from app.services.agent_intake_service import run_intake_agent
 from app.services.architecture_council_service import (
@@ -309,13 +310,17 @@ def register_workflow_commands(app: typer.Typer) -> None:
         console.print("[green]Repository analysis completed.[/green]")
 
         if github_owner and github_repo:
-            console.print("[cyan]Analyzing feature request...[/cyan]")
-            feature_request = run_intake_agent(
-                raw_request=request,
-                repo_path=str(repo_path),
+            feature_request = run_with_heartbeat(
+                "Analyzing feature request with Intake Agent",
+                lambda: run_intake_agent(
+                    raw_request=request,
+                    repo_path=str(repo_path),
+                ),
             )
-            console.print("[cyan]Preparing GitHub issue spec...[/cyan]")
-            issue_spec = run_product_owner_agent(feature_request)
+            issue_spec = run_with_heartbeat(
+                "Preparing GitHub issue spec with Product Owner Agent",
+                lambda: run_product_owner_agent(feature_request),
+            )
 
             state.feature_request_title = feature_request.title
             state.feature_request_summary = feature_request.summary
@@ -355,13 +360,17 @@ def register_workflow_commands(app: typer.Typer) -> None:
             state.mark_completed("create_feature_branch")
             console.print("[green]Feature branch created.[/green]")
 
-            console.print("[cyan]Running architecture review...[/cyan]")
-            architecture_review = build_architecture_review_for_state(state)
+            architecture_review = run_with_heartbeat(
+                "Running architecture review with Architecture Council Agent",
+                lambda: build_architecture_review_for_state(state),
+            )
             apply_architecture_review_to_state(state, architecture_review)
             console.print("[green]Architecture review completed.[/green]")
 
-            console.print("[cyan]Generating implementation plan...[/cyan]")
-            implementation_plan = build_implementation_plan_for_state(state)
+            implementation_plan = run_with_heartbeat(
+                "Generating implementation plan with Planner Agent",
+                lambda: build_implementation_plan_for_state(state),
+            )
             apply_implementation_plan_to_state(state, implementation_plan)
             console.print("[green]Implementation plan generated.[/green]")
 

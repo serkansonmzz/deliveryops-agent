@@ -14,6 +14,8 @@ from app.tools.patch_validator_tools import (
     validate_patch_can_apply_or_raise,
 )
 
+MAX_DEV_PATCH_ATTEMPTS = 3
+
 DEV_AGENT_INSTRUCTIONS = """
 You are a careful software delivery patch generator.
 
@@ -25,6 +27,8 @@ Your job:
 - Do not invent files unless clearly necessary.
 - Do not include markdown fences around the diff.
 - The unified_diff field must contain a real patch that can be written to a .patch file.
+- Hunk headers must use numeric line counts only, for example @@ -0,0 +1,12 @@.
+- Never write words such as "thirty" inside hunk headers.
 - Prefer updating existing files over creating many new files.
 - If there is not enough context, produce an empty but valid response explanation instead of hallucinating.
 """
@@ -72,6 +76,36 @@ Repository File Context:
 """
 
 
+def build_retry_patch_prompt(context: dict, validation_error: str, attempt: int) -> str:
+    return (
+        build_agent_patch_prompt(context)
+        + "\n\nPrevious patch attempt was rejected by validation.\n"
+        + f"Attempt: {attempt}\n"
+        + "Validation error:\n"
+        + validation_error
+        + "\n\nRetry requirements:\n"
+        + "- Return a complete unified diff only in unified_diff.\n"
+        + "- Include diff headers, file headers, and hunk headers for every file.\n"
+        + "- Hunk header line counts must be numeric and accurate.\n"
+        + "- Do not include prose, markdown fences, or abbreviated patches.\n"
+    )
+
+
+def _write_agent_raw_output(repo_path: Path, content: object, attempt: int) -> None:
+    debug_dir = repo_path / ".deliveryops"
+    debug_dir.mkdir(exist_ok=True)
+    (debug_dir / "agent_raw_output.txt").write_text(str(content), encoding="utf-8")
+    (debug_dir / f"agent_raw_output_attempt_{attempt}.txt").write_text(
+        str(content),
+        encoding="utf-8",
+    )
+
+
+def _validate_agent_patch(repo_path: Path, patch_text: str) -> None:
+    validate_unified_diff_or_raise(patch_text)
+    validate_patch_can_apply_or_raise(repo_path, patch_text)
+
+
 def generate_patch_with_agent(repo_path: Path, state: DeliveryState) -> Path | None:
     load_dotenv()
     if not os.getenv("OPENAI_API_KEY"):
@@ -88,26 +122,59 @@ def generate_patch_with_agent(repo_path: Path, state: DeliveryState) -> Path | N
         markdown=False,
     )
 
-    response = agent.run(build_agent_patch_prompt(context))
-    content = response.content
-
-    debug_path = repo_path / ".deliveryops" / "agent_raw_output.txt"
-    debug_path.parent.mkdir(exist_ok=True)
-    debug_path.write_text(str(content), encoding="utf-8")
-
-    if not content or not content.unified_diff.strip():
-        raise RuntimeError("Agent output did not contain a usable unified diff patch.") 
-
-    patch_text = sanitize_agent_patch_output(content.unified_diff)
-
-    if not patch_text:
-        raise RuntimeError("Agent output did not contain a usable unified diff patch.")
-
     generated_patch_path = repo_path / ".deliveryops" / "generated.patch"
     if generated_patch_path.exists():
         generated_patch_path.unlink()
 
-    validate_unified_diff_or_raise(patch_text)
-    validate_patch_can_apply_or_raise(repo_path, patch_text)
+    prompt = build_agent_patch_prompt(context)
+    last_error = ""
 
-    return write_generated_patch(repo_path, patch_text)
+    for attempt in range(1, MAX_DEV_PATCH_ATTEMPTS + 1):
+        response = agent.run(prompt)
+        content = response.content
+        _write_agent_raw_output(repo_path, content, attempt)
+        patch_text = ""
+
+        try:
+            if not content or not content.unified_diff.strip():
+                raise RuntimeError("Agent output did not contain a usable unified diff patch.")
+
+            patch_text = sanitize_agent_patch_output(content.unified_diff)
+
+            if not patch_text:
+                raise RuntimeError("Agent output did not contain a usable unified diff patch.")
+
+            _validate_agent_patch(repo_path, patch_text)
+            state.dev_context_status = "patch_generated"
+            state.last_error = None
+            return write_generated_patch(repo_path, patch_text)
+        except RuntimeError as exc:
+            last_error = str(exc)
+            workspace = repo_path / ".deliveryops"
+            workspace.mkdir(exist_ok=True)
+            if patch_text:
+                (workspace / "rejected.patch").write_text(patch_text, encoding="utf-8")
+            (workspace / "patch_validation_error.txt").write_text(
+                last_error,
+                encoding="utf-8",
+            )
+            state.dev_context_status = "patch_generation_retrying"
+            save_state(state)
+
+            if attempt == MAX_DEV_PATCH_ATTEMPTS:
+                break
+
+            prompt = build_retry_patch_prompt(context, last_error, attempt + 1)
+
+    state.dev_context_status = "patch_generation_failed"
+    state.patch_summary = (
+        "Dev Agent produced a patch, but it was rejected by validation. "
+        "No patch was applied."
+    )
+    state.last_error = last_error
+    save_state(state)
+    raise RuntimeError(
+        "Dev Agent patch generation failed after validation retries. "
+        "No patch was applied. See `.deliveryops/rejected.patch`, "
+        "`.deliveryops/patch_validation_error.txt`, and agent raw output files."
+    )

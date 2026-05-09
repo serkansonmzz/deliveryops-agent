@@ -12,6 +12,15 @@ def normalize_output(text: str | None, max_chars: int = 12000) -> str:
 def classify_test_failure(output: str) -> str:
     lowered = output.lower()
 
+    if (
+        "no module named" in lowered
+        and ("python -m" in lowered or "/python:" in lowered)
+    ) or (
+        "no module named" in lowered
+        and ("pythonpath" in lowered or "pythonpath = [\"src\"]" in lowered)
+    ):
+        return "python_path_or_package_import_error"
+
     if "syntaxerror" in lowered or "indentationerror" in lowered:
         return "syntax_error"
 
@@ -52,6 +61,13 @@ def build_likely_causes(category: str) -> list[str]:
             "A module import path may be wrong.",
             "A new dependency may be missing from pyproject.toml.",
             "A file may have been created in the wrong package location.",
+        ]
+
+    if category == "python_path_or_package_import_error":
+        return [
+            "A subprocess test could not import the package under test.",
+            "The project likely uses a src layout and pytest pythonpath does not automatically carry into subprocesses.",
+            "The package may need to be installed before invoking `python -m`, or the subprocess needs PYTHONPATH=src.",
         ]
 
     if category == "attribute_error":
@@ -116,6 +132,15 @@ def build_next_actions(category: str) -> list[str]:
             "Verify package paths and `__init__.py` files.",
             "Add missing dependency only if it is truly required.",
             "Run tests again after the import fix.",
+            *common,
+        ]
+
+    if category == "python_path_or_package_import_error":
+        return [
+            "Check whether the failing subprocess invokes `python -m <package>`.",
+            "If the project uses a src layout, pass PYTHONPATH=src to the subprocess test or run through the installed package environment.",
+            "Prefer setting the subprocess environment in the test helper instead of changing production imports.",
+            "Run tests again after the package path fix.",
             *common,
         ]
 
@@ -192,5 +217,10 @@ def analyze_test_failure(state: DeliveryState) -> TestFailureAnalysis:
         summary=summarize_failure(category, output),
         likely_causes=build_likely_causes(category),
         next_actions=build_next_actions(category),
-        risk_level="high" if category in {"syntax_error", "import_error", "timeout"} else "medium",
+        risk_level=(
+            "high"
+            if category
+            in {"syntax_error", "import_error", "python_path_or_package_import_error", "timeout"}
+            else "medium"
+        ),
     )

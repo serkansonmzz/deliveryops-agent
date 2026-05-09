@@ -123,10 +123,24 @@ def build_dev_patch_context(repo_path: Path, state: DeliveryState) -> DevPatchCo
     selected_paths = select_dev_context_files(state)
     related_tests = collect_related_tests(state, selected_paths)
     context_files: list[DevContextFile] = []
+    planned_new_files: list[str] = []
 
     for path in selected_paths:
         content = safe_read_context_file(repo_path, path)
         if content is None:
+            full_path = (repo_path / path).resolve()
+            try:
+                full_path.relative_to(repo_path.resolve())
+            except ValueError:
+                continue
+
+            if (
+                not is_blocked_file(path)
+                and not is_binary_like(path)
+                and path in state.implementation_plan_target_files + state.likely_files
+                and not full_path.exists()
+            ):
+                planned_new_files.append(path)
             continue
 
         reason = "Selected from implementation plan, likely files, or related tests."
@@ -172,6 +186,7 @@ def build_dev_patch_context(repo_path: Path, state: DeliveryState) -> DevPatchCo
         selected_files=context_files,
         related_tests=related_tests,
         risky_files=state.repo_risky_files,
+        planned_new_files=deduplicate_keep_order(planned_new_files),
         allowed_target_files=allowed_target_files,
         blocked_file_patterns=BLOCKED_FILE_PATTERNS,
         patch_rules=[
@@ -195,4 +210,5 @@ def apply_dev_context_tracking_to_state(
     state.dev_context_selected_files = [file.path for file in context.selected_files]
     state.dev_context_related_tests = context.related_tests
     state.dev_context_risky_files = context.risky_files
+    state.dev_context_planned_new_files = context.planned_new_files
     state.dev_context_status = "prepared"
