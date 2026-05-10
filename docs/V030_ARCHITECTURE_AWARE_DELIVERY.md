@@ -130,3 +130,32 @@ The context contract includes:
 - explicit patch rules
 
 The Dev Agent still only proposes a patch. It does not apply patches, commit, push, create pull requests, or bypass approval gates.
+
+## Phase 48: Deterministic Patch Builder & LLM Runtime Polish
+
+Phase 48 reduces the workflow's dependency on LLM-generated unified diff formatting.
+
+The preferred flow is:
+
+```text
+DevPatchContext
+→ Dev Agent
+→ structured file_edits
+→ deterministic patch builder
+→ strict patch validation
+→ approval gate
+```
+
+The Dev Agent can still return `unified_diff` as a compatibility fallback, but structured edit intents are preferred for normal file edits.
+
+Phase 48 also adds:
+
+- per-agent model routing with environment overrides
+- controlled LLM call timeouts
+- agent timing logs in `.deliveryops/logs/agent_timing.json`
+- visible attempt progress for Dev Agent patch generation
+- elapsed heartbeat output for long-running commands
+- final report notes for patch generation attempts and validation failures
+- fast planning mode through `deliveryops run --fast` and `--no-llm-planning`
+
+The safety boundary remains unchanged: Dev Agent proposes changes only, and patch application still requires explicit approval.

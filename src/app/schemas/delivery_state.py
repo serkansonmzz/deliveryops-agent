@@ -98,6 +98,8 @@ class DeliveryState(BaseModel):
     dev_context_risky_files: list[str] = Field(default_factory=list)
     dev_context_planned_new_files: list[str] = Field(default_factory=list)
     dev_context_status: str | None = None
+    patch_generation_attempts: list[dict] = Field(default_factory=list)
+    patch_generation_blocked_reason: str | None = None
     implementation_plan: list[str] = Field(default_factory=list)
     implementation_plan_summary: str | None = None
     implementation_plan_source: str | None = None

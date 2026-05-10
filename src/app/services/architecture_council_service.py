@@ -1,4 +1,5 @@
 import os
+import time
 from pathlib import Path
 
 from agno.agent import Agent
@@ -12,6 +13,11 @@ from app.state_store import load_state, save_state
 from app.tools.architecture_review_tools import (
     apply_architecture_review_to_state,
     build_fallback_architecture_review,
+)
+from app.tools.agent_runtime_tools import (
+    append_agent_timing_log,
+    resolve_agent_model,
+    run_agent_with_timeout,
 )
 from app.tools.markdown_tracking_tools import update_delivery_markdown
 
@@ -79,7 +85,15 @@ def build_architecture_review_for_state(
     try:
         definition = get_agent_definition("architecture_council_agent")
         agent: Agent = build_agno_agent(definition)
-        response = agent.run(build_architecture_council_prompt(state))
+        started_at = time.monotonic()
+        response = run_agent_with_timeout(agent, build_architecture_council_prompt(state))
+        append_agent_timing_log(
+            Path(state.repo_path),
+            agent_name="architecture_council_agent",
+            model=resolve_agent_model(definition),
+            duration_seconds=time.monotonic() - started_at,
+            status="completed",
+        )
         content = response.content
 
         if isinstance(content, ArchitectureReview):

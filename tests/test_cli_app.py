@@ -56,7 +56,7 @@ def test_dev_generate_patch_prints_progress(monkeypatch, tmp_path):
     monkeypatch.setattr(
         patch_commands,
         "generate_patch_with_agent",
-        lambda repo_path, state: patch_path,
+        lambda repo_path, state, progress=None: patch_path,
     )
     monkeypatch.setattr(patch_commands, "save_state", lambda state: None)
     monkeypatch.setattr(patch_commands, "update_delivery_markdown", lambda state: None)
@@ -68,3 +68,11 @@ def test_dev_generate_patch_prints_progress(monkeypatch, tmp_path):
     assert "Working on Dev Agent patch generation" in result.output
     assert "Generating and validating patch with Dev Agent" in result.output
     assert "Agent patch generated" in result.output
+
+
+def test_run_help_includes_fast_mode():
+    result = runner.invoke(app, ["run", "--help"])
+
+    assert result.exit_code == 0
+    assert "--fast" in result.output
+    assert "--no-llm-planning" in result.output

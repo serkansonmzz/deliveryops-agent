@@ -1,4 +1,6 @@
 import os
+import time
+from collections.abc import Callable
 from pathlib import Path
 from dotenv import load_dotenv
 from agno.agent import Agent
@@ -6,6 +8,12 @@ from agno.agent import Agent
 from app.schemas.agent_patch_response import AgentPatchResponse
 from app.schemas.delivery_state import DeliveryState
 from app.state_store import save_state
+from app.tools.agent_runtime_tools import (
+    append_agent_timing_log,
+    get_agent_timeout_seconds,
+    run_agent_with_timeout,
+)
+from app.tools.deterministic_patch_builder_tools import build_patch_from_file_edits
 from app.tools.diff_tools import write_generated_patch
 from app.tools.repo_context_tools import collect_repo_context
 from app.tools.patch_sanitizer_tools import sanitize_agent_patch_output
@@ -21,7 +29,8 @@ You are a careful software delivery patch generator.
 
 Your job:
 - Read the delivery request and repository context.
-- Produce a valid unified diff patch.
+- Prefer producing structured file_edits. DeliveryOps will build the unified diff.
+- Use unified_diff only as a fallback when file_edits cannot express the change.
 - Only modify files that are relevant to the request.
 - Keep the patch as small as possible.
 - Do not invent files unless clearly necessary.
@@ -43,6 +52,10 @@ Generate a minimal unified diff patch using the following DevPatchContext.
 {dev_patch_context}
 
 Important:
+- Prefer file_edits over unified_diff.
+- Use edit_type values only from: create_file, replace_text, append_after, append_to_file.
+- For replace_text and append_after, provide an exact anchor from the selected file content.
+- For create_file, provide the full file content.
 - Follow the patch rules exactly.
 - Only modify files that are relevant to the implementation plan.
 - Do not modify blocked files, secrets, credentials, or environment files.
@@ -84,6 +97,7 @@ def build_retry_patch_prompt(context: dict, validation_error: str, attempt: int)
         + "Validation error:\n"
         + validation_error
         + "\n\nRetry requirements:\n"
+        + "- Prefer corrected file_edits if the change can be expressed structurally.\n"
         + "- Return a complete unified diff only in unified_diff.\n"
         + "- Include diff headers, file headers, and hunk headers for every file.\n"
         + "- Hunk header line counts must be numeric and accurate.\n"
@@ -106,7 +120,41 @@ def _validate_agent_patch(repo_path: Path, patch_text: str) -> None:
     validate_patch_can_apply_or_raise(repo_path, patch_text)
 
 
-def generate_patch_with_agent(repo_path: Path, state: DeliveryState) -> Path | None:
+def _extract_patch_text(repo_path: Path, content: AgentPatchResponse) -> tuple[str, str]:
+    if content.file_edits:
+        return build_patch_from_file_edits(repo_path, content.file_edits), "file_edits"
+
+    if content.unified_diff.strip():
+        return sanitize_agent_patch_output(content.unified_diff), "unified_diff"
+
+    raise RuntimeError("Agent output did not contain file_edits or a usable unified diff patch.")
+
+
+def _record_patch_attempt(
+    state: DeliveryState,
+    *,
+    attempt: int,
+    mode: str,
+    status: str,
+    elapsed_seconds: float,
+    error: str | None = None,
+) -> None:
+    entry = {
+        "attempt": attempt,
+        "mode": mode,
+        "status": status,
+        "elapsed_seconds": round(elapsed_seconds, 3),
+    }
+    if error:
+        entry["error"] = error
+    state.patch_generation_attempts.append(entry)
+
+
+def generate_patch_with_agent(
+    repo_path: Path,
+    state: DeliveryState,
+    progress: Callable[[str], None] | None = None,
+) -> Path | None:
     load_dotenv()
     if not os.getenv("OPENAI_API_KEY"):
         raise RuntimeError("OPENAI_API_KEY is not set.")
@@ -114,8 +162,9 @@ def generate_patch_with_agent(repo_path: Path, state: DeliveryState) -> Path | N
     context = collect_repo_context(repo_path, state)
     save_state(state)
 
+    model = os.getenv("DELIVERYOPS_DEV_MODEL") or "openai:gpt-5"
     agent = Agent(
-        model="openai:gpt-5",
+        model=model,
         instructions=DEV_AGENT_INSTRUCTIONS,
         output_schema=AgentPatchResponse,
         structured_outputs=True,
@@ -128,28 +177,62 @@ def generate_patch_with_agent(repo_path: Path, state: DeliveryState) -> Path | N
 
     prompt = build_agent_patch_prompt(context)
     last_error = ""
+    state.patch_generation_attempts = []
+    state.patch_generation_blocked_reason = None
 
     for attempt in range(1, MAX_DEV_PATCH_ATTEMPTS + 1):
-        response = agent.run(prompt)
-        content = response.content
-        _write_agent_raw_output(repo_path, content, attempt)
+        if progress:
+            progress(f"Attempt {attempt}/{MAX_DEV_PATCH_ATTEMPTS} started.")
+
+        started_at = time.monotonic()
         patch_text = ""
+        generation_mode = "unknown"
 
         try:
-            if not content or not content.unified_diff.strip():
-                raise RuntimeError("Agent output did not contain a usable unified diff patch.")
+            response = run_agent_with_timeout(
+                agent,
+                prompt,
+                timeout_seconds=get_agent_timeout_seconds(),
+            )
+            elapsed = time.monotonic() - started_at
+            content = response.content
+            _write_agent_raw_output(repo_path, content, attempt)
 
-            patch_text = sanitize_agent_patch_output(content.unified_diff)
+            if not content:
+                raise RuntimeError("Agent output was empty.")
 
+            patch_text, generation_mode = _extract_patch_text(repo_path, content)
             if not patch_text:
-                raise RuntimeError("Agent output did not contain a usable unified diff patch.")
+                raise RuntimeError("Agent output did not produce patch content.")
 
             _validate_agent_patch(repo_path, patch_text)
+            _record_patch_attempt(
+                state,
+                attempt=attempt,
+                mode=generation_mode,
+                status="accepted",
+                elapsed_seconds=elapsed,
+            )
+            append_agent_timing_log(
+                repo_path,
+                agent_name="dev_agent",
+                model=model,
+                duration_seconds=elapsed,
+                status="accepted",
+                attempt=attempt,
+            )
             state.dev_context_status = "patch_generated"
+            state.patch_generation_blocked_reason = None
             state.last_error = None
+            if progress:
+                progress(
+                    f"Attempt {attempt}/{MAX_DEV_PATCH_ATTEMPTS} accepted "
+                    f"using {generation_mode}."
+                )
             return write_generated_patch(repo_path, patch_text)
-        except RuntimeError as exc:
+        except (RuntimeError, TimeoutError) as exc:
             last_error = str(exc)
+            elapsed = time.monotonic() - started_at
             workspace = repo_path / ".deliveryops"
             workspace.mkdir(exist_ok=True)
             if patch_text:
@@ -158,8 +241,30 @@ def generate_patch_with_agent(repo_path: Path, state: DeliveryState) -> Path | N
                 last_error,
                 encoding="utf-8",
             )
+            _record_patch_attempt(
+                state,
+                attempt=attempt,
+                mode=generation_mode,
+                status="rejected",
+                elapsed_seconds=elapsed,
+                error=last_error,
+            )
+            append_agent_timing_log(
+                repo_path,
+                agent_name="dev_agent",
+                model=model,
+                duration_seconds=elapsed,
+                status="rejected",
+                attempt=attempt,
+                error=last_error,
+            )
             state.dev_context_status = "patch_generation_retrying"
             save_state(state)
+            if progress:
+                progress(
+                    f"Attempt {attempt}/{MAX_DEV_PATCH_ATTEMPTS} validation failed; "
+                    "retrying with validation error."
+                )
 
             if attempt == MAX_DEV_PATCH_ATTEMPTS:
                 break
@@ -167,6 +272,10 @@ def generate_patch_with_agent(repo_path: Path, state: DeliveryState) -> Path | N
             prompt = build_retry_patch_prompt(context, last_error, attempt + 1)
 
     state.dev_context_status = "patch_generation_failed"
+    state.patch_generation_blocked_reason = "blocked_by_invalid_patch"
+    if state.pending_action == "apply_patch":
+        state.pending_action = None
+        state.pending_approval = False
     state.patch_summary = (
         "Dev Agent produced a patch, but it was rejected by validation. "
         "No patch was applied."

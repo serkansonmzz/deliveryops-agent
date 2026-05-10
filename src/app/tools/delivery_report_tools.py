@@ -161,7 +161,24 @@ def build_final_report(state: DeliveryState) -> FinalReport:
         lines.append("## Patch Generation Notes")
         lines.append("")
         lines.append(f"- Dev Context Status: `{state.dev_context_status or 'not available'}`")
+        lines.append(
+            f"- Blocked Reason: `{state.patch_generation_blocked_reason or 'not available'}`"
+        )
         lines.append(f"- Last Error: {state.last_error or 'not available'}")
+        if state.patch_generation_attempts:
+            lines.append("")
+            lines.append("### Attempts")
+            lines.append("")
+            for attempt in state.patch_generation_attempts:
+                lines.append(
+                    "- "
+                    f"Attempt `{attempt.get('attempt')}` "
+                    f"mode `{attempt.get('mode')}` "
+                    f"status `{attempt.get('status')}` "
+                    f"elapsed `{attempt.get('elapsed_seconds')}`s"
+                )
+                if attempt.get("error"):
+                    lines.append(f"  Error: {attempt.get('error')}")
         lines.append("")
 
     lines.append("## Dev Agent Context")

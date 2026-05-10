@@ -436,6 +436,20 @@ The context includes:
 
 The Dev Agent receives curated context instead of a broad repository dump. Secret, credential, environment, binary, and oversized files are blocked or truncated before they can enter the prompt.
 
+## Deterministic Patch Builder
+
+DeliveryOps asks the Dev Agent to prefer structured `file_edits` over hand-written unified diffs. DeliveryOps then builds and validates the patch deterministically before any approval or apply step.
+
+Runtime controls:
+
+- `DELIVERYOPS_DEV_MODEL` overrides the Dev Agent model.
+- `DELIVERYOPS_FAST_MODEL` overrides faster planning/intake agent models.
+- `DELIVERYOPS_AGENT_TIMEOUT_SECONDS` controls LLM call timeout.
+- `deliveryops run --fast` uses deterministic architecture/planning fallbacks.
+- `deliveryops run --no-llm-planning` skips LLM-backed architecture/planning only.
+
+Agent timing logs are written to `.deliveryops/logs/agent_timing.json`.
+
 ## Docs
 
 - `docs/MVP_RELEASE_CANDIDATE.md`
